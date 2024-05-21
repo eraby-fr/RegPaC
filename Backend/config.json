@@ -1,0 +1,16 @@
+{
+    "set_temperature": {
+        "comfort": 22.0,
+        "eco": 18.0
+    },
+    "off_peak": [
+        {
+            "start": "00:30",
+            "end": "07:30"
+        },
+        {
+            "start": "12:30",
+            "end": "14:00"
+        }
+    ]
+}

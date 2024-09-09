@@ -51,7 +51,7 @@ def log_temperatures(temperatures_sources):
     cursor.execute('''
         INSERT INTO temperature_log (source1, source2, source3)
         VALUES (?, ?, ?)
-    ''', (temperatures_sources["source1"], temperatures_sources["source2"], temperatures_sources["source3"]))
+    ''', (temperatures_sources["1"], temperatures_sources["2"], temperatures_sources["3"]))
     connection.commit()
     connection.close()
 
@@ -67,8 +67,8 @@ def retrieve_logged_temperature():
     elif os.path.exists(temp_db_path):
         connection = sqlite3.connect(temp_db_path)
     else:
-        return jsonify({"error": "No temperature log database found"}), 500
-
+        raise Exception({"error": "Temperature log database not found"})
+    
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM temperature_log

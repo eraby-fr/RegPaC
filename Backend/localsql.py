@@ -1,16 +1,24 @@
 import sqlite3
+import datetime
 from flask import jsonify
 import os
 
-def log_heatvalue_if_change(on: bool):
-    db_path = '/mnt/NAS/heat_log.db'
-    temp_db_path = '/tmp/heat_log.db'
-    
+db_path: str = '/mnt/NAS/heat_log.db'
+temp_db_path: str = '/tmp/heat_log.db'
+
+def get_db_path()->str:
+    global db_path, temp_db_path
     if os.path.exists(db_path):
-        connection = sqlite3.connect(db_path)
+        return db_path
     else:
-        connection = sqlite3.connect(temp_db_path)
+        return temp_db_path
     
+def need_to_sync()->bool:
+    global db_path, temp_db_path
+    return os.path.exists(temp_db_path) and os.path.exists(db_path)
+
+def log_heatvalue_if_change(on: bool):
+    connection = sqlite3.connect(get_db_path())
     cursor = connection.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS heat_log (
@@ -19,19 +27,55 @@ def log_heatvalue_if_change(on: bool):
             state BOOLEAN
         )
     ''')
+    
+    # Check last entry
     cursor.execute('''
-        INSERT INTO heat_log (state)
-        VALUES (?)
-    ''', (on,))
+        SELECT state FROM heat_log
+        ORDER BY timestamp DESC
+        LIMIT 1
+    ''')
+    last_state = cursor.fetchone()
+
+    # Update if state has changed
+    if last_state is None or last_state[0] != on:
+        cursor.execute('''
+            INSERT INTO heat_log (state)
+            VALUES (?)
+        ''', (on,))
+
     connection.commit()
     connection.close()
 
-    if os.path.exists(db_path) and os.path.exists(temp_db_path):
+    if need_to_sync():
         sync_heat_db_to_nas()
 
+def retrieve_heat_values(start_date: datetime, end_date:datetime) -> list:
+    path = get_db_path()
+    if os.path.exists(path):
+        connection = sqlite3.connect(path)
+    else:
+        raise Exception({"error": "Temperature log database not found"})
+    
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM heat_log WHERE timestamp BETWEEN \'"\
+                   + start_date.strftime('%Y-%m-%d %H:%M:%S') + "\' AND \'" + end_date.strftime('%Y-%m-%d %H:%M:%S')\
+                   + "\' ORDER BY timestamp ASC")
+
+    rows = cursor.fetchall()
+    connection.close()
+
+    log_entries = []
+    for row in rows:
+        log_entries.append({
+            "id": row[0],
+            "timestamp": row[1],
+            "state": row[2]
+        })
+
+    return log_entries
+
 def log_temperatures(temperatures_sources):
-    db_path = '/mnt/NAS/temperature_log.db'
-    temp_db_path = '/tmp/temperature_log.db'
+    global db_path, temp_db_path
 
     if os.path.exists(db_path):
         connection = sqlite3.connect(db_path)
@@ -55,12 +99,11 @@ def log_temperatures(temperatures_sources):
     connection.commit()
     connection.close()
 
-    if os.path.exists(db_path) and os.path.exists(temp_db_path):
+    if need_to_sync():
         sync_temp_db_to_nas()
 
 def retrieve_logged_temperature():
-    db_path = '/mnt/NAS/temperature_log.db'
-    temp_db_path = '/tmp/temperature_log.db'
+    global db_path, temp_db_path
 
     if os.path.exists(db_path):
         connection = sqlite3.connect(db_path)
@@ -94,8 +137,7 @@ def retrieve_logged_temperature():
     return jsonify(log_entries), 200
 
 def sync_temp_db_to_nas():
-    db_path = '/mnt/NAS/temperature_log.db'
-    temp_db_path = '/tmp/temperature_log.db'
+    global db_path, temp_db_path
 
     if not os.path.exists(temp_db_path):
         return
@@ -119,9 +161,8 @@ def sync_temp_db_to_nas():
 
     os.remove(temp_db_path)
 
-def sync_heat_db_to_nas():
-    db_path = '/mnt/NAS/heat_log.db'
-    temp_db_path = '/tmp/heat_log.db'
+def sync_heat_db_to_nas(): 
+    global db_path, temp_db_path
 
     if not os.path.exists(temp_db_path):
         return

@@ -1,6 +1,6 @@
 import unittest
 import json
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, mock_open
 from Backend.main import app, init_app
 
 class HeatingControllerTestCase(unittest.TestCase):

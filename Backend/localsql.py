@@ -3,12 +3,13 @@ import datetime
 from flask import jsonify
 import os
 
-db_path: str = '/mnt/NAS/heat_log.db'
-temp_db_path: str = '/tmp/heat_log.db'
+db_path: str = '/mnt/NAS/RegPac.db'
+temp_db_path: str = '/tmp/RegPac.db'
 
 def get_db_path()->str:
     global db_path, temp_db_path
     if os.path.exists(db_path):
+        sync_tmp_db_to_nas_db_if_necessary()
         return db_path
     else:
         return temp_db_path
@@ -17,9 +18,7 @@ def need_to_sync()->bool:
     global db_path, temp_db_path
     return os.path.exists(temp_db_path) and os.path.exists(db_path)
 
-def log_heatvalue_if_change(on: bool):
-    connection = sqlite3.connect(get_db_path())
-    cursor = connection.cursor()
+def create_heat_log_table_if_not_exists(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS heat_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,6 +26,12 @@ def log_heatvalue_if_change(on: bool):
             state BOOLEAN
         )
     ''')
+
+def log_heatvalue_if_change(on: bool):
+    connection = sqlite3.connect(get_db_path())
+    cursor = connection.cursor()
+
+    create_heat_log_table_if_not_exists(cursor)
     
     # Check last entry
     cursor.execute('''
@@ -45,9 +50,6 @@ def log_heatvalue_if_change(on: bool):
 
     connection.commit()
     connection.close()
-
-    if need_to_sync():
-        sync_heat_db_to_nas()
 
 def retrieve_heat_values(start_date: datetime, end_date:datetime) -> list:
     path = get_db_path()
@@ -74,55 +76,60 @@ def retrieve_heat_values(start_date: datetime, end_date:datetime) -> list:
 
     return log_entries
 
-def log_temperatures(temperatures_sources):
-    global db_path, temp_db_path
-
-    if os.path.exists(db_path):
-        connection = sqlite3.connect(db_path)
-    else:
-        connection = sqlite3.connect(temp_db_path)
-
-    cursor = connection.cursor()
+def create_temperature_log_table_if_not_exists(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS temperature_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             source1 REAL,
             source2 REAL,
-            source3 REAL
+            source3 REAL,
+            source4 REAL
         )
     ''')
+
+def log_temperatures(temperatures_sources: list):
+    connection = sqlite3.connect(get_db_path())
+
+    cursor = connection.cursor()
+    create_temperature_log_table_if_not_exists(cursor)
+
     cursor.execute('''
-        INSERT INTO temperature_log (source1, source2, source3)
-        VALUES (?, ?, ?)
-    ''', (temperatures_sources["1"], temperatures_sources["2"], temperatures_sources["3"]))
+        INSERT INTO temperature_log (source1, source2, source3, source4)
+        VALUES (?, ?, ?, ?)
+    ''', (temperatures_sources["1"], temperatures_sources["2"], temperatures_sources["3"], temperatures_sources["4"]))
     connection.commit()
     connection.close()
 
-    if need_to_sync():
-        sync_temp_db_to_nas()
-
-def retrieve_logged_temperature():
-    global db_path, temp_db_path
-
-    if os.path.exists(db_path):
-        connection = sqlite3.connect(db_path)
-    elif os.path.exists(temp_db_path):
-        connection = sqlite3.connect(temp_db_path)
+def retrieve_last_logged_temperature() -> list:
+    path = get_db_path()
+    if os.path.exists(path):
+        connection = sqlite3.connect(path)
     else:
         raise Exception({"error": "Temperature log database not found"})
     
     cursor = connection.cursor()
-    cursor.execute('''
-        SELECT * FROM temperature_log
-        WHERE timestamp BETWEEN ? AND ?
-    ''', (start_date, end_date))
+    cursor.execute("SELECT * FROM temperature_log ORDER BY timestamp DESC LIMIT 1")
 
     rows = cursor.fetchall()
     connection.close()
 
-    if not rows:
-        return jsonify({"message": "No data found for the given date range"}), 404
+    return {'1': rows[0][2], '2': rows[0][3], '3': rows[0][4], '4': rows[0][5]}
+
+def retrieve_logged_temperature(start_date: datetime, end_date:datetime) -> list:
+    path = get_db_path()
+    if os.path.exists(path):
+        connection = sqlite3.connect(path)
+    else:
+        raise Exception({"error": "Temperature log database not found"})
+    
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM temperature_log WHERE timestamp BETWEEN \'"\
+                   + start_date.strftime('%Y-%m-%d %H:%M:%S') + "\' AND \'" + end_date.strftime('%Y-%m-%d %H:%M:%S')\
+                   + "\' ORDER BY timestamp ASC")
+
+    rows = cursor.fetchall()
+    connection.close()
 
     log_entries = []
     for row in rows:
@@ -131,53 +138,40 @@ def retrieve_logged_temperature():
             "timestamp": row[1],
             "source1": row[2],
             "source2": row[3],
-            "source3": row[4]
+            "source3": row[4],
+            "source4": row[5]
         })
 
-    return jsonify(log_entries), 200
+    return log_entries
 
-def sync_temp_db_to_nas():
-    global db_path, temp_db_path
-
-    if not os.path.exists(temp_db_path):
+def sync_tmp_db_to_nas_db_if_necessary():
+    if not need_to_sync():
         return
 
-    nas_connection = sqlite3.connect(db_path)
-    temp_connection = sqlite3.connect(temp_db_path)
-
-    nas_cursor = nas_connection.cursor()
-    temp_cursor = temp_connection.cursor()
-
-    temp_cursor.execute('SELECT * FROM temperature_log')
-    rows = temp_cursor.fetchall()
-    nas_cursor.executemany('''
-        INSERT INTO temperature_log (timestamp, source1, source2, source3)
-        VALUES (?, ?, ?, ?)
-    ''', rows)
-
-    nas_connection.commit()
-    nas_connection.close()
-    temp_connection.close()
-
-    os.remove(temp_db_path)
-
-def sync_heat_db_to_nas(): 
     global db_path, temp_db_path
 
-    if not os.path.exists(temp_db_path):
-        return
-
-    nas_connection = sqlite3.connect(db_path)
     temp_connection = sqlite3.connect(temp_db_path)
+    nas_connection = sqlite3.connect(db_path)
 
-    nas_cursor = nas_connection.cursor()
-    temp_cursor = temp_connection.cursor()
+    source_cursor = temp_connection.cursor()
+    destination_cursor = nas_connection.cursor()
 
-    temp_cursor.execute('SELECT * FROM heat_log')
-    rows = temp_cursor.fetchall()
-    nas_cursor.executemany('''
+    #duplicate heat log
+    source_cursor.execute('SELECT * FROM heat_log')
+    rows = source_cursor.fetchall()
+    create_heat_log_table_if_not_exists(destination_cursor)
+    destination_cursor.executemany('''
         INSERT INTO heat_log (timestamp, state)
         VALUES (?, ?)
+    ''', rows)
+
+    #duplicate temperature log
+    source_cursor.execute('SELECT * FROM temperature_log')
+    rows = source_cursor.fetchall()
+    create_temperature_log_table_if_not_exists(destination_cursor)
+    destination_cursor.executemany('''
+        INSERT INTO temperature_log (timestamp, source1, source2, source3, source4)
+        VALUES (?, ?, ?, ?, ?)
     ''', rows)
 
     nas_connection.commit()

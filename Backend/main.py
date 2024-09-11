@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 from Backend.temperature import collect_temperatures
-from Backend.localsql import log_heatvalue_if_change, log_temperatures, retrieve_logged_temperature
+from Backend.localsql import log_heatvalue_if_change, log_temperatures, retrieve_logged_temperature, retrieve_last_logged_temperature
 
 import os
 
@@ -87,7 +87,7 @@ def regulate_heating(setpoint_temperature, temperatures):
 @app.route('/temperature/<source>', methods=['GET'])
 def get_temperature(source):
     try:
-        temperatures_sources = retrieve_logged_temperature()
+        temperatures_sources = retrieve_last_logged_temperature()
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     

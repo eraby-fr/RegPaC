@@ -3,20 +3,24 @@ import datetime
 from flask import jsonify
 import os
 
-db_path: str = '/mnt/NAS/RegPac.db'
-temp_db_path: str = '/tmp/RegPac.db'
+def get_remote_file_path()->str:
+    return '/mnt/NAS/RegPac.db'
+
+def get_local_ramfile_path()->str:
+    return '/tmp/RegPac.db'
+
+def remote_file_can_be_created()->bool:
+    return False
 
 def get_db_path()->str:
-    global db_path, temp_db_path
-    if os.path.exists(db_path):
+    if os.path.exists(get_remote_file_path()) or remote_file_can_be_created():
         sync_tmp_db_to_nas_db_if_necessary()
-        return db_path
+        return get_remote_file_path()
     else:
-        return temp_db_path
+        return get_local_ramfile_path()
     
 def need_to_sync()->bool:
-    global db_path, temp_db_path
-    return os.path.exists(temp_db_path) and os.path.exists(db_path)
+    return os.path.exists(get_local_ramfile_path()) and os.path.exists(get_remote_file_path())
 
 def create_heat_log_table_if_not_exists(cursor):
     cursor.execute('''
@@ -148,10 +152,8 @@ def sync_tmp_db_to_nas_db_if_necessary():
     if not need_to_sync():
         return
 
-    global db_path, temp_db_path
-
-    temp_connection = sqlite3.connect(temp_db_path)
-    nas_connection = sqlite3.connect(db_path)
+    temp_connection = sqlite3.connect(get_local_ramfile_path())
+    nas_connection = sqlite3.connect(get_remote_file_path())
 
     source_cursor = temp_connection.cursor()
     destination_cursor = nas_connection.cursor()
@@ -178,4 +180,4 @@ def sync_tmp_db_to_nas_db_if_necessary():
     nas_connection.close()
     temp_connection.close()
 
-    os.remove(temp_db_path)
+    os.remove(get_local_ramfile_path())

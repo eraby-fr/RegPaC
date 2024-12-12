@@ -25,6 +25,10 @@
             "device":"EnO_0197F4A6"
         }
     ],
+    "actuator":
+    {
+        "device":"EnO_05135E2A"
+    },
     "set_temperature": {
         "comfort": 22.0,
         "eco": 18.0

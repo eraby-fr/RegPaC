@@ -1,4 +1,30 @@
 {
+    "app":
+    {
+        "pooling_frequency":20
+    },
+    "fhem":
+    {
+        "url":"http://192.168.0.3:8088/fhem"
+    },
+    "sensors": [
+        {
+            "name":"Salon",
+            "device":"EnO_05297FF4"
+        },
+        {
+            "name":"Chambre C",
+            "device":"EnO_01981053"
+        },
+        {
+            "name":"Chambre V",
+            "device":"EnO_01959B1C"
+        },
+        {
+            "name":"Chambre Parents",
+            "device":"EnO_0197F4A6"
+        }
+    ],
     "set_temperature": {
         "comfort": 22.0,
         "eco": 18.0

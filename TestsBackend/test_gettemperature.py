@@ -3,7 +3,7 @@ import datetime
 from unittest.mock import patch, MagicMock
 from Backend.temperature import collect_temperatures, Measure
 
-class SendCmd_Actuator(unittest.TestCase):
+class SendCmd_Sensors(unittest.TestCase):
 
     def setUp(self):
         pass

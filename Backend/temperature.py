@@ -33,8 +33,8 @@ def send_request(url: str, device:str):
     if response.status_code == 200:
         data = response.json()
         if isinstance(data.get("Results"), list) and data["Results"]:
-            temperature = data["Results"][0].get("Readings", {}).get("temperature").get("Value")
-            time = data["Results"][0].get("Readings", {}).get("temperature").get("Time")
+            temperature = data["Results"][0]["Readings"]["temperature"]["Value"]
+            time = data["Results"][0]["Readings"]["temperature"]["Time"]
         else:
             temperature = None
             time = None

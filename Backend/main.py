@@ -4,8 +4,8 @@ import json
 
 from datetime import datetime
 
-from Backend.temperature import collect_temperatures
-from Backend.localsql import log_heatvalue_if_change, log_temperatures, retrieve_logged_temperature, retrieve_last_logged_temperature
+from temperature import collect_temperatures
+from localsql import log_heatvalue_if_change, log_temperatures, retrieve_logged_temperature, retrieve_last_logged_temperature
 
 import os
 
@@ -30,7 +30,7 @@ def heat(on: bool):
         print("Heating is OFF... Let's plug EnoCean on that")
 
 def periodic_tasks():
-    temperatures_sources = collect_temperatures()
+    temperatures_sources = collect_temperatures(config)
     setpoint_temperature = weights_the_temp_setting()
     log_temperatures(temperatures_sources) #ToDo : add the log of the consign temperature
     regulate_heating(setpoint_temperature, temperatures_sources)
@@ -132,7 +132,7 @@ def get_temperature_log():
     return retrieve_logged_temperature(start_date, end_date)
 
 def load_config() -> dict:
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json'), 'r') as f:
+    with open('/container/config/config.json', 'r') as f:
         return json.load(f)
     
 def init_app():

@@ -99,12 +99,12 @@ def get_setpoint_temperature():
 def set_setpoint_temperature() -> str:
     global set_comfort_temp, set_eco_temp
     try:
-        set_comfort_temp = float(request.json['comfort'])
-        set_eco_temp = float(request.json['eco'])
+        set_comfort_temp = float(request.json['comfort_temp'])
+        set_eco_temp = float(request.json['eco_temp'])
         # Update config file
         config['set_temperature']['comfort'] = set_comfort_temp
         config['set_temperature']['eco'] = set_eco_temp
-        with open('config.json', 'w') as f:
+        with open('/container/config/config.json', 'w') as f:
             json.dump(config, f, indent=4)
         periodic_tasks()
         return jsonify({"message": "setpoint temperature updated"}), 200
@@ -113,16 +113,16 @@ def set_setpoint_temperature() -> str:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/temperature_log', methods=['GET'])
-def get_temperature_log():
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-
-    if not start_date or not end_date:
-        return jsonify({"error": "Please provide both start_date and end_date"}), 400
-
-    return retrieve_logged_temperature(start_date, end_date)
-
+#@app.route('/temperature_log', methods=['GET'])
+#def get_temperature_log():
+#    start_date = request.args.get('start_date')
+#    end_date = request.args.get('end_date')
+#
+#    if not start_date or not end_date:
+#        return jsonify({"error": "Please provide both start_date and end_date"}), 400
+#
+#    return retrieve_logged_temperature(start_date, end_date)
+#
 def load_config() -> dict:
     with open('/container/config/config.json', 'r') as f:
         return json.load(f)

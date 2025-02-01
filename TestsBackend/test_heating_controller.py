@@ -40,7 +40,7 @@ class HeatingControllerTestCase(unittest.TestCase):
     @patch('Backend.localsql.sqlite3.connect') #to avoid db created on /tmp
     def run_generic_test_set_temperature(self, mock_sql, mock_heat, mock_json_dump, mock_config_load, mock_collect_temperatures, mock_open, temp_eco:float, temp_comfort:float, expected_heating_result:bool):
         init_app()
-        response = self.app.post('/setpoint', data=json.dumps({'eco': temp_eco,'comfort': temp_comfort}), content_type='application/json')
+        response = self.app.post('/setpoint', data=json.dumps({'eco_temp': temp_eco,'comfort_temp': temp_comfort}), content_type='application/json')
         self.assertEqual(response.status_code, 200)
         mock_heat.assert_called_once_with(expected_heating_result)
 

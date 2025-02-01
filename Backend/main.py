@@ -6,6 +6,7 @@ from datetime import datetime
 
 from temperature import collect_temperatures
 from localsql import log_heatvalue_if_change, log_temperatures, retrieve_logged_temperature, retrieve_last_logged_temperature
+from heat import send_heat
 
 app = Flask(__name__)
 
@@ -18,10 +19,7 @@ temperatures_sources = []
 
 def heat(on: bool):
     log_heatvalue_if_change(on)
-    if on:
-        print("Heating is ON... Let's plug EnoCean on that")
-    else:
-        print("Heating is OFF... Let's plug EnoCean on that")
+    send_heat(config=config, enable=on)
 
 def periodic_tasks():
     global temperatures_sources

@@ -7,8 +7,6 @@ from datetime import datetime
 from temperature import collect_temperatures
 from localsql import log_heatvalue_if_change, log_temperatures, retrieve_logged_temperature, retrieve_last_logged_temperature
 
-import os
-
 app = Flask(__name__)
 
 config: dict = {}
@@ -16,11 +14,7 @@ config: dict = {}
 set_comfort_temp: float = 0.0
 set_eco_temp: float = 0.0
 
-temperatures_sources = {
-    "1": 0.0,
-    "2": 0.0,
-    "3": 0.0
-}
+temperatures_sources = []
 
 def heat(on: bool):
     log_heatvalue_if_change(on)
@@ -30,9 +24,10 @@ def heat(on: bool):
         print("Heating is OFF... Let's plug EnoCean on that")
 
 def periodic_tasks():
+    global temperatures_sources
     temperatures_sources = collect_temperatures(config)
     setpoint_temperature = weights_the_temp_setting()
-    log_temperatures(temperatures_sources) #ToDo : add the log of the consign temperature
+    #log_temperatures(temperatures_sources) #ToDo : add the log of the consign temperature
     regulate_heating(setpoint_temperature, temperatures_sources)
     
 def is_in_off_peak(current_time_str: str) -> bool:
@@ -76,7 +71,7 @@ def weights_the_temp_setting()-> float:
     return setpoint_temperature
 
 def regulate_heating(setpoint_temperature, temperatures):
-    average_temperature = sum(temperatures.values()) / len(temperatures)
+    average_temperature = sum(measure.temp for measure in temperatures) / len(temperatures)
     if average_temperature < setpoint_temperature:
         print("Enable Heating because setpoint is set to %.2f and average T° is %.2f" % (setpoint_temperature, average_temperature))
         heat(True)
@@ -86,14 +81,11 @@ def regulate_heating(setpoint_temperature, temperatures):
 
 @app.route('/temperature/<source>', methods=['GET'])
 def get_temperature(source):
-    try:
-        temperatures_sources = retrieve_last_logged_temperature()
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
-    if source in temperatures_sources:
-        return jsonify({source: temperatures_sources[source]})
+    item = next((measure for measure in temperatures_sources if measure.name == source), None)
+    if item:
+        return jsonify({source:item.temp})
     else:
+        #ToDo try to retrieve in DB
         return jsonify({"error": "Source not found"}), 404
 
 @app.route('/setpoint', methods=['GET'])
@@ -136,16 +128,16 @@ def load_config() -> dict:
         return json.load(f)
     
 def init_app():
-    global config
+    global config, set_comfort_temp, set_eco_temp
     config = load_config()
-    set_comfort_temp: float = config['set_temperature']['comfort']
-    set_eco_temp: float = config['set_temperature']['eco']
+    set_comfort_temp = config['set_temperature']['comfort']
+    set_eco_temp = config['set_temperature']['eco']
 
 def periodic_timer_handler():
     periodic_tasks()
-    Timer(20, periodic_timer_handler).start()
+    Timer(config['app']['pooling_frequency'], periodic_timer_handler).start()
 
 if __name__ == '__main__':
     init_app()
     periodic_timer_handler()  # Start the periodic task
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=80, debug=True)

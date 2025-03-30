@@ -1,6 +1,6 @@
 services:
   regpac:
-    image: ghcr.io/eraby-fr/regpac:0.0.2
+    image: ghcr.io/eraby-fr/regpac:0.0.3
     container_name: regpac_container
     volumes:
       - ./config:/container/config/

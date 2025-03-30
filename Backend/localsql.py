@@ -6,10 +6,10 @@ previous_state = None
 def log_heatvalue_if_change(on: bool):
     global previous_state
     current_year = time.strftime("%Y")
-    log_file = f"/tmp/fhem_logs/heat_{current_year}.log"
+    log_file = f"/tmp/fhem_logs/regpac_heat-{current_year}.log"
     timestamp = time.strftime("%Y-%m-%d_%H:%M:%S")
-    status = "on" if on else "off"
-    log_entry = f"{timestamp} heater {status}\n"
+    status = "100" if on else "0"
+    log_entry = f"{timestamp} heater power: {status}\n"
     
     if previous_state != on:
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
@@ -19,9 +19,9 @@ def log_heatvalue_if_change(on: bool):
 
 def log_setpoint(comfort_temp: float, eco_temp: float):
     current_year = time.strftime("%Y")
-    log_file = f"/tmp/fhem_logs/setpoint_{current_year}.log"
+    log_file = f"/tmp/fhem_logs/regpac_setpoint-{current_year}.log"
     timestamp = time.strftime("%Y-%m-%d_%H:%M:%S")
-    log_entry = f"{timestamp} setpoint_comfort {comfort_temp}, setpoint_eco {eco_temp}\n"
+    log_entry = f"{timestamp} setpoint comfort: {comfort_temp}\n{timestamp} setpoint eco: {eco_temp}\n"
     
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     with open(log_file, "a") as file:

@@ -49,19 +49,19 @@ class TestLogHeatValue(unittest.TestCase):
         self.assertEqual(mock_file().write.call_count, 4)
 
         log_entry = mock_file().write.call_args_list[0][0][0]
-        self.assertIn("setpoint_comfort 21.5", log_entry)
-        self.assertIn("setpoint_eco 18.0", log_entry)
+        self.assertIn("setpoint comfort: 21.5", log_entry)
+        self.assertIn("setpoint eco: 18.0", log_entry)
 
         log_entry = mock_file().write.call_args_list[1][0][0]
-        self.assertIn("setpoint_comfort 21.0", log_entry)
-        self.assertIn("setpoint_eco 18.0", log_entry)
+        self.assertIn("setpoint comfort: 21.0", log_entry)
+        self.assertIn("setpoint eco: 18.0", log_entry)
 
         log_entry = mock_file().write.call_args_list[2][0][0]
-        self.assertIn("setpoint_comfort 21.0", log_entry)
-        self.assertIn("setpoint_eco 18.0", log_entry)
+        self.assertIn("setpoint comfort: 21.0", log_entry)
+        self.assertIn("setpoint eco: 18.0", log_entry)
         
         log_entry = mock_file().write.call_args_list[3][0][0]
-        self.assertIn("setpoint_comfort 22.0", log_entry)
-        self.assertIn("setpoint_eco 19.2", log_entry)
+        self.assertIn("setpoint comfort: 22.0", log_entry)
+        self.assertIn("setpoint eco: 19.2", log_entry)
 if __name__ == "__main__":
     unittest.main()

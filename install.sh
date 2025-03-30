@@ -1,9 +1,9 @@
 #!/bin/bash
 
-URL="https://github.com/eraby-fr/RegPaC/archive/refs/tags/0.0.1.zip"
+URL="https://github.com/eraby-fr/RegPaC/archive/refs/tags/0.0.3.zip"
 TMP_DIR="/tmp"
-ZIP_FILE="${TMP_DIR}/0.0.1.zip"
-EXTRACT_DIR="${TMP_DIR}/RegPaC-0.0.1"
+ZIP_FILE="${TMP_DIR}/regpac.zip"
+EXTRACT_DIR="${TMP_DIR}/RegPaC"
 TARGET_DIR="$(pwd)/RegPaC"
 
 echo -e "Welcome in fully automated deployement & run of RegPaC"

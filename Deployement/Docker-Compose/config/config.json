@@ -1,0 +1,47 @@
+{
+    "app": {
+        "pooling_frequency": 60
+    },
+    "fhem": {
+        "url": "http://127.0.0.1:8088/fhem"
+    },
+    "sensors": [
+        {
+            "name": "Living Room",
+            "device": "EnO_05297FF4"
+        },
+        {
+            "name": "BedRoom C",
+            "device": "EnO_01981053"
+        },
+        {
+            "name": "BedRoom V",
+            "device": "EnO_01959B1C"
+        },
+        {
+            "name": "BedRoom P",
+            "device": "EnO_0197F4A6"
+        }
+    ],
+    "actuator": {
+        "device": "EnO_01A360D2"
+    },
+    "set_temperature": {
+        "comfort": 21.0,
+        "eco": 20.0
+    },
+    "off_peak": [
+        {
+            "start": "00:30",
+            "end": "07:30"
+        },
+        {
+            "start": "12:30",
+            "end": "14:00"
+        }
+    ],
+    "deep_night": {
+        "start": "00:30",
+        "end": "05:00"
+    }
+}

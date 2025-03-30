@@ -1,0 +1,26 @@
+services:
+  #regpac:
+  #  image: ghcr.io/eraby-fr/regpac:0.0.2
+  #  container_name: regpac_container
+  #  volumes:
+  #    - ./config:/container/config/
+  #  ports:
+  #    - "80:80"
+  #  environment:
+  #    - EXAMPLE_ENV=local
+  #  network_mode: "host"
+  telegraf:
+    image: telegraf:1.33.1
+    restart: always
+    volumes:
+      - ./config/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /tmp/fhem_logs/:/tmp/fhem_logs/
+    network_mode: "host"
+  grafana:
+    image: grafana/grafana-arm32v7-linux:7.0.6
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./config/grafana-provisioning/:/etc/grafana/provisioning
+    network_mode: "host"
+volumes:
+  grafana-storage:

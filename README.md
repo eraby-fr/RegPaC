@@ -5,5 +5,10 @@ You need to have : docker, docker-compose.
 You also need FHEM deployed
 
 ## How to use it?
-You just have to download the install.sh at the root of this project and Execute it.
+You just have to download the install.sh execute it.
+
+```bash
+wget https://raw.githubusercontent.com/eraby-fr/RegPaC/refs/heads/main/install.sh
+```
+
 It will wget the release tarball, extract the docker compose file and initial configuration, pull images and run it.

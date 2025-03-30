@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 from temperature import collect_temperatures
-from localsql import log_heatvalue_if_change, log_temperatures, retrieve_logged_temperature, retrieve_last_logged_temperature
+from localsql import log_heatvalue_if_change, log_setpoint
 from heat import send_heat
 
 app = Flask(__name__)
@@ -25,7 +25,6 @@ def periodic_tasks():
     global temperatures_sources
     temperatures_sources = collect_temperatures(config)
     setpoint_temperature = weights_the_temp_setting()
-    #log_temperatures(temperatures_sources) #ToDo : add the log of the consign temperature
     regulate_heating(setpoint_temperature, temperatures_sources)
     
 def is_in_off_peak(current_time_str: str) -> bool:
@@ -77,15 +76,6 @@ def regulate_heating(setpoint_temperature, temperatures):
         print("Disable Heating because setpoint is set to %.2f and average T° is %.2f" % (setpoint_temperature, average_temperature))
         heat(False)
 
-@app.route('/temperature/<source>', methods=['GET'])
-def get_temperature(source):
-    item = next((measure for measure in temperatures_sources if measure.name == source), None)
-    if item:
-        return jsonify({source:item.temp})
-    else:
-        #ToDo try to retrieve in DB
-        return jsonify({"error": "Source not found"}), 404
-
 @app.route('/setpoint', methods=['GET'])
 def get_setpoint_temperature():
     return jsonify({
@@ -104,6 +94,7 @@ def set_setpoint_temperature() -> str:
         config['set_temperature']['eco'] = set_eco_temp
         with open('/container/config/config.json', 'w') as f:
             json.dump(config, f, indent=4)
+        log_setpoint(comfort_temp=set_comfort_temp, eco_temp=set_eco_temp)
         periodic_tasks()
         return jsonify({"message": "setpoint temperature updated"}), 200
     except (KeyError, ValueError):
@@ -111,16 +102,6 @@ def set_setpoint_temperature() -> str:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#@app.route('/temperature_log', methods=['GET'])
-#def get_temperature_log():
-#    start_date = request.args.get('start_date')
-#    end_date = request.args.get('end_date')
-#
-#    if not start_date or not end_date:
-#        return jsonify({"error": "Please provide both start_date and end_date"}), 400
-#
-#    return retrieve_logged_temperature(start_date, end_date)
-#
 def load_config() -> dict:
     with open('/container/config/config.json', 'r') as f:
         return json.load(f)
@@ -130,6 +111,7 @@ def init_app():
     config = load_config()
     set_comfort_temp = config['set_temperature']['comfort']
     set_eco_temp = config['set_temperature']['eco']
+    log_setpoint(comfort_temp=set_comfort_temp, eco_temp=set_eco_temp)
 
 def periodic_timer_handler():
     periodic_tasks()

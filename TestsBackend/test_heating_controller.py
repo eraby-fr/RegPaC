@@ -15,30 +15,14 @@ from Backend.temperature import Measure
 
 class HeatingControllerTestCase(unittest.TestCase):
     def setUp(self):
-        self.app = app.test_client()
-        #self.app.testing = True
-
-    @patch('Backend.main.regulate_heating')
-    @patch('Backend.main.weights_the_temp_setting')
-    @patch('Backend.main.collect_temperatures', return_value=[Measure(21.0, "1", datetime.now()), Measure(22.8, "2", datetime.now()), Measure(19.5, "3", datetime.now()), Measure(20.0, "4", datetime.now())])
-    def test_get_temperature(self, mock_c, mock_w, mock_r):
-        periodic_tasks()
-        response = self.app.get('/temperature/2')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.text, '{"2":22.8}\n')        
-
-    @patch('Backend.main.retrieve_last_logged_temperature', return_value=[Measure(21.0, "1", datetime.now()), Measure(22.8, "2", datetime.now()), Measure(19.5, "3", datetime.now()), Measure(20.0, "4", datetime.now())])
-    def test_get_temperature_failwrongsource(self, mock_retrieve_logged_temperature):
-        response = self.app.get('/temperature/45')
-        self.assertEqual(response.status_code, 404)
+        self.app = app.test_client()   
     
     @patch('Backend.main.open', new_callable=mock_open)
     @patch('Backend.main.collect_temperatures', return_value=[Measure(20.0, "1", datetime.now()), Measure(18.2, "2", datetime.now()), Measure(20.7, "3", datetime.now()), Measure(21.1, "4", datetime.now())]) #Avg = 20°
     @patch('Backend.main.load_config', return_value={"set_temperature":{"comfort":22.0,"eco":18.0},"off_peak":[{"start":"00:30","end":"07:30"},{"start":"12:30","end":"14:00"}, {"start": "23:00", "end": "00:10"}]})
     @patch('Backend.main.json.dump')
     @patch('Backend.main.heat')
-    @patch('Backend.localsql.sqlite3.connect') #to avoid db created on /tmp
-    def run_generic_test_set_temperature(self, mock_sql, mock_heat, mock_json_dump, mock_config_load, mock_collect_temperatures, mock_open, temp_eco:float, temp_comfort:float, expected_heating_result:bool):
+    def run_generic_test_set_temperature(self, mock_heat, mock_json_dump, mock_config_load, mock_collect_temperatures, mock_open, temp_eco:float, temp_comfort:float, expected_heating_result:bool):
         init_app()
         response = self.app.post('/setpoint', data=json.dumps({'eco_temp': temp_eco,'comfort_temp': temp_comfort}), content_type='application/json')
         self.assertEqual(response.status_code, 200)

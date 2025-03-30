@@ -1,14 +1,14 @@
 services:
-  #regpac:
-  #  image: ghcr.io/eraby-fr/regpac:0.0.2
-  #  container_name: regpac_container
-  #  volumes:
-  #    - ./config:/container/config/
+  regpac:
+    image: ghcr.io/eraby-fr/regpac:0.0.3
+    container_name: regpac_container
+    volumes:
+      - ./config:/container/config/
   #  ports:
   #    - "80:80"
   #  environment:
   #    - EXAMPLE_ENV=local
-  #  network_mode: "host"
+    network_mode: "host"
   telegraf:
     image: telegraf:1.33.1
     restart: always

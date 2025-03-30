@@ -1,12 +1,14 @@
 #!/bin/bash
 
-URL="https://github.com/eraby-fr/RegPaC/archive/refs/tags/0.0.3.zip"
+TAG="0.0.3"
+#### Do not change below...
+URL="https://github.com/eraby-fr/RegPaC/archive/refs/tags/${TAG}.zip"
 TMP_DIR="/tmp"
 ZIP_FILE="${TMP_DIR}/regpac.zip"
-EXTRACT_DIR="${TMP_DIR}/RegPaC"
+EXTRACT_DIR="${TMP_DIR}/RegPaC-${TAG}"
 TARGET_DIR="$(pwd)/RegPaC"
 
-echo -e "Welcome in fully automated deployement & run of RegPaC"
+echo -e "Welcome in fully automated deployement & run of RegPaC ${TAG}"
 echo -e " "
 echo -e "Starting process : RegPac will be deployed in the current folder."
 

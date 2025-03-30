@@ -8,7 +8,7 @@ You also need FHEM deployed
 You just have to download the install.sh execute it.
 
 ```bash
-wget https://raw.githubusercontent.com/eraby-fr/RegPaC/refs/heads/main/install.sh
+wget -O install.sh https://raw.githubusercontent.com/eraby-fr/RegPaC/refs/heads/main/install.sh
 ```
 
 It will wget the release tarball, extract the docker compose file and initial configuration, pull images and run it.

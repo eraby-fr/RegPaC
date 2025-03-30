@@ -1,9 +1,10 @@
 services:
   regpac:
-    image: ghcr.io/eraby-fr/regpac:0.0.3
+    image: ghcr.io/eraby-fr/regpac:0.0.4
     container_name: regpac_container
     volumes:
       - ./config:/container/config/
+      - /tmp/fhem_logs/:/tmp/fhem_logs/
   #  ports:
   #    - "80:80"
   #  environment:

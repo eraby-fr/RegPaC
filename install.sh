@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TAG="0.0.3"
+TAG="0.0.4"
 #### Do not change below...
 URL="https://github.com/eraby-fr/RegPaC/archive/refs/tags/${TAG}.zip"
 TMP_DIR="/tmp"

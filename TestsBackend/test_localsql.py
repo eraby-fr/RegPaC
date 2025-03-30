@@ -11,14 +11,14 @@ class TestLogHeatValue(unittest.TestCase):
     def test_initial_log_on(self, mock_makedirs, mock_file):
         log_heatvalue_if_change(True)
         mock_file().write.assert_called_once()
-        self.assertIn("on", mock_file().write.call_args[0][0])
+        self.assertIn("100", mock_file().write.call_args[0][0])
     
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
     def test_initial_log_off(self, mock_makedirs, mock_file):
         log_heatvalue_if_change(False)
         mock_file().write.assert_called_once()
-        self.assertIn("off", mock_file().write.call_args[0][0])
+        self.assertIn(" 0", mock_file().write.call_args[0][0])
     
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
@@ -34,9 +34,9 @@ class TestLogHeatValue(unittest.TestCase):
         log_heatvalue_if_change(False)
         log_heatvalue_if_change(True)
         self.assertEqual(mock_file().write.call_count, 3)
-        self.assertIn("on", mock_file().write.call_args_list[0][0][0])
-        self.assertIn("off", mock_file().write.call_args_list[1][0][0])
-        self.assertIn("on", mock_file().write.call_args_list[2][0][0])
+        self.assertIn("100", mock_file().write.call_args_list[0][0][0])
+        self.assertIn(" 0", mock_file().write.call_args_list[1][0][0])
+        self.assertIn("100", mock_file().write.call_args_list[2][0][0])
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
@@ -49,19 +49,19 @@ class TestLogHeatValue(unittest.TestCase):
         self.assertEqual(mock_file().write.call_count, 4)
 
         log_entry = mock_file().write.call_args_list[0][0][0]
-        self.assertIn("setpoint_comfort 21.5", log_entry)
-        self.assertIn("setpoint_eco 18.0", log_entry)
+        self.assertIn("setpoint comfort: 21.5", log_entry)
+        self.assertIn("setpoint eco: 18.0", log_entry)
 
         log_entry = mock_file().write.call_args_list[1][0][0]
-        self.assertIn("setpoint_comfort 21.0", log_entry)
-        self.assertIn("setpoint_eco 18.0", log_entry)
+        self.assertIn("setpoint comfort: 21.0", log_entry)
+        self.assertIn("setpoint eco: 18.0", log_entry)
 
         log_entry = mock_file().write.call_args_list[2][0][0]
-        self.assertIn("setpoint_comfort 21.0", log_entry)
-        self.assertIn("setpoint_eco 18.0", log_entry)
+        self.assertIn("setpoint comfort: 21.0", log_entry)
+        self.assertIn("setpoint eco: 18.0", log_entry)
         
         log_entry = mock_file().write.call_args_list[3][0][0]
-        self.assertIn("setpoint_comfort 22.0", log_entry)
-        self.assertIn("setpoint_eco 19.2", log_entry)
+        self.assertIn("setpoint comfort: 22.0", log_entry)
+        self.assertIn("setpoint eco: 19.2", log_entry)
 if __name__ == "__main__":
     unittest.main()

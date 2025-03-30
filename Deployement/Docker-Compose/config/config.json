@@ -3,7 +3,7 @@
         "pooling_frequency": 60
     },
     "fhem": {
-        "url": "http://127.0.0.1:8088/fhem"
+        "url": "http://127.0.0.1:7088/fhem"
     },
     "sensors": [
         {

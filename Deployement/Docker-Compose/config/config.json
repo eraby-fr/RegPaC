@@ -7,19 +7,19 @@
     },
     "sensors": [
         {
-            "name": "Salon",
+            "name": "Living Room",
             "device": "EnO_05297FF4"
         },
         {
-            "name": "Chambre Charlie",
+            "name": "BedRoom C",
             "device": "EnO_01981053"
         },
         {
-            "name": "Chambre Victor",
+            "name": "BedRoom V",
             "device": "EnO_01959B1C"
         },
         {
-            "name": "Chambre Parents",
+            "name": "BedRoom P",
             "device": "EnO_0197F4A6"
         }
     ],

@@ -12,3 +12,10 @@ wget -O install.sh https://raw.githubusercontent.com/eraby-fr/RegPaC/refs/heads/
 ```
 
 It will wget the release tarball, extract the docker compose file and initial configuration, pull images and run it.
+
+## Initialize Influc V1
+```bash
+influx -precision rfc3339
+CREATE DATABASE telegraph
+SHOW DATABASES
+```

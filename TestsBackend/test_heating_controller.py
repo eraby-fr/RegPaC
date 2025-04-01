@@ -7,7 +7,6 @@ import os
 current_directory = os.path.dirname(os.path.abspath(__file__))
 backend_path = os.path.join(current_directory, "../Backend")
 sys.path.insert(0, backend_path)
-print(sys.path)
 
 from unittest.mock import patch, mock_open
 from Backend.main import app, init_app, periodic_tasks

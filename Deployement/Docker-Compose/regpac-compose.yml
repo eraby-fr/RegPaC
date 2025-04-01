@@ -1,14 +1,10 @@
 services:
   regpac:
-    image: ghcr.io/eraby-fr/regpac:0.0.4
+    image: ghcr.io/eraby-fr/regpac:0.0.5
     container_name: regpac_container
     volumes:
       - ./config:/container/config/
       - /tmp/fhem_logs/:/tmp/fhem_logs/
-  #  ports:
-  #    - "80:80"
-  #  environment:
-  #    - EXAMPLE_ENV=local
     network_mode: "host"
   telegraf:
     image: telegraf:1.33.1

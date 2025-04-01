@@ -7,6 +7,10 @@ from datetime import datetime
 from temperature import collect_temperatures
 from localsql import log_heatvalue_if_change, log_setpoint
 from heat import send_heat
+import logging
+import sys
+
+LOGGER=logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -70,10 +74,10 @@ def weights_the_temp_setting()-> float:
 def regulate_heating(setpoint_temperature, temperatures):
     average_temperature = sum(measure.temp for measure in temperatures) / len(temperatures)
     if average_temperature < setpoint_temperature:
-        print("Enable Heating because setpoint is set to %.2f and average T° is %.2f" % (setpoint_temperature, average_temperature))
+        LOGGER.info(f'Enable Heating because setpoint is set to {setpoint_temperature} and average T° is {average_temperature}')
         heat(True)
     else:
-        print("Disable Heating because setpoint is set to %.2f and average T° is %.2f" % (setpoint_temperature, average_temperature))
+        LOGGER.info(f'Disable Heating because setpoint is set to {setpoint_temperature} and average T° is {average_temperature}')
         heat(False)
 
 @app.route('/setpoint', methods=['GET'])
@@ -103,8 +107,12 @@ def set_setpoint_temperature() -> str:
         return jsonify({"error": str(e)}), 500
 
 def load_config() -> dict:
-    with open('/container/config/config.json', 'r') as f:
-        return json.load(f)
+    try:
+        with open('/container/config/config.json', 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        LOGGER.critical(f'Fail to load program config due to : {e}')
+        sys.exit(1)
     
 def init_app():
     global config, set_comfort_temp, set_eco_temp
@@ -118,6 +126,7 @@ def periodic_timer_handler():
     Timer(config['app']['pooling_frequency'], periodic_timer_handler).start()
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
     init_app()
     periodic_timer_handler()  # Start the periodic task
     app.run(host='0.0.0.0', port=80, debug=True)

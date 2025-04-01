@@ -5,10 +5,6 @@ services:
     volumes:
       - ./config:/container/config/
       - /tmp/fhem_logs/:/tmp/fhem_logs/
-  #  ports:
-  #    - "80:80"
-  #  environment:
-  #    - EXAMPLE_ENV=local
     network_mode: "host"
   telegraf:
     image: telegraf:1.33.1

@@ -15,7 +15,6 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 1,
   "links": [],
   "panels": [
     {
@@ -59,7 +58,39 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:542",
+          "alias": "RegPac_Request_heat",
+          "color": "rgb(255, 195, 195)",
+          "fill": 2,
+          "hideTooltip": true,
+          "linewidth": 0,
+          "yaxis": 2
+        },
+        {
+          "$$hashKey": "object:654",
+          "alias": "Consigne_Confort",
+          "color": "#FF9830",
+          "fill": 0,
+          "linewidth": 3
+        },
+        {
+          "$$hashKey": "object:738",
+          "alias": "Consigne_Eco",
+          "color": "#73BF69",
+          "fill": 0,
+          "linewidth": 3
+        },
+        {
+          "$$hashKey": "object:1230",
+          "alias": "Real_Heat",
+          "color": "#F2495C",
+          "fill": 2,
+          "hideTooltip": true,
+          "yaxis": 2
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": true,
@@ -86,6 +117,7 @@
               "type": "fill"
             }
           ],
+          "hide": false,
           "measurement": "Salon",
           "orderByTime": "ASC",
           "policy": "default",
@@ -135,6 +167,7 @@
               "type": "fill"
             }
           ],
+          "hide": false,
           "measurement": "Charlie",
           "orderByTime": "ASC",
           "policy": "default",
@@ -184,6 +217,7 @@
               "type": "fill"
             }
           ],
+          "hide": false,
           "measurement": "Parents",
           "orderByTime": "ASC",
           "policy": "default",
@@ -233,6 +267,7 @@
               "type": "fill"
             }
           ],
+          "hide": false,
           "measurement": "Victor",
           "orderByTime": "ASC",
           "policy": "default",
@@ -259,6 +294,159 @@
               "value": "chauffage"
             }
           ]
+        },
+        {
+          "alias": "RegPac_Request_heat",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": false,
+          "measurement": "Regpac_Heat",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT mean(\"power\") FROM \"Regpac_Heat\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
+          "rawQuery": false,
+          "refId": "E",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "power"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "alias": "Consigne_Confort",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": false,
+          "measurement": "Regpac_Setpoint",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "F",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "comfort"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "alias": "Consigne_Eco",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": false,
+          "measurement": "Regpac_Setpoint",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "G",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "eco"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "alias": "Real_Heat",
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "Heater",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "H",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
         }
       ],
       "thresholds": [
@@ -290,6 +478,7 @@
         "sort": 0,
         "value_type": "individual"
       },
+      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -313,7 +502,7 @@
           "format": "short",
           "label": null,
           "logBase": 1,
-          "max": null,
+          "max": "100",
           "min": null,
           "show": true
         }
@@ -324,6 +513,7 @@
       }
     }
   ],
+  "refresh": "1m",
   "schemaVersion": 25,
   "style": "dark",
   "tags": [],
@@ -350,5 +540,5 @@
   "timezone": "",
   "title": "Home",
   "uid": "aGBC28iRz",
-  "version": 5
+  "version": 1
 }

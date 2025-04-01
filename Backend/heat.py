@@ -1,4 +1,7 @@
 import requests
+import logging
+
+LOGGER=logging.getLogger(__name__)
 
 def send_heat(config: dict, enable: bool):
     device = config['actuator']['device']
@@ -16,11 +19,11 @@ def send_heat(config: dict, enable: bool):
     try:
         response = requests.post(config['fhem']['url'], params=params)
         if response.status_code == 200:
-            print(f"Success to switch heat to {enable}")
+            LOGGER.info(f"Success to switch heat to {enable}")
             return True
         else:
-            print(f"Request to switch heat to {enable} failed with status code {response.status_code}: {response.text}")
+            LOGGER.warning(f"Request to switch heat to {enable} failed with status code {response.status_code}: {response.text}")
             return False
     except requests.RequestException as e:
-        print(f"An error occurred: {e}")
+        LOGGER.warning(f"Request to switch heat to {enable} failed with exception : {e}")
         return False

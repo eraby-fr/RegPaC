@@ -1,6 +1,9 @@
 import requests
+import logging
 
 from datetime import datetime
+
+LOGGER=logging.getLogger(__name__)
 
 class Measure:
     def __init__(self, temperature: float, name: str, timestamp: datetime):
@@ -9,7 +12,7 @@ class Measure:
         self.timestamp = timestamp
     
     def print(self):
-        print(f"{self.name} : {self.temp}°C - collected at {self.timestamp}")
+        LOGGER.info(f"{self.name} : {self.temp}°C - collected at {self.timestamp}")
         
 def collect_temperatures(config: dict):
     temperatures_sources = []
@@ -42,7 +45,7 @@ def send_request(url: str, device:str):
         return temperature, time
 
     else:
-        print(f"Request failed with status code {response.status_code}: {response.text}")
+        LOGGER.warning(f"Request failed with status code {response.status_code}: {response.text}")
         return None, None
 
 

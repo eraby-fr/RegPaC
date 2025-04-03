@@ -31,7 +31,7 @@ def log_dbg_setpoint(value: float):
     current_year = time.strftime("%Y")
     log_file = f"/tmp/fhem_logs/regpac_dbg_setpoint-{current_year}.log"
     timestamp = time.strftime("%Y-%m-%d_%H:%M:%S")
-    log_entry = f"{timestamp} debug setpoint: {value}\n{timestamp}"
+    log_entry = f"{timestamp} debug setpoint: {value}\n"
     
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     with open(log_file, "a") as file:

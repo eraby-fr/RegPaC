@@ -2,6 +2,7 @@ import unittest
 import Backend.heat
 from unittest.mock import patch, MagicMock
 
+
 class SendCmd_Actuator(unittest.TestCase):
     def setUp(self):
         Backend.heat.timestamp_on_last_sent = 0.0
@@ -21,7 +22,7 @@ class SendCmd_Actuator(unittest.TestCase):
         mock_response.status_code = 200
         mock_post.return_value = mock_response
 
-        res = Backend.heat.send_heat(config=config,enable=True)
+        res = Backend.heat.send_heat(config=config, enable=True)
 
         self.assertTrue(res)
         mock_post.assert_called_once_with(
@@ -40,7 +41,7 @@ class SendCmd_Actuator(unittest.TestCase):
         mock_response.status_code = 200
         mock_post.return_value = mock_response
 
-        res = Backend.heat.send_heat(config=config,enable=False)
+        res = Backend.heat.send_heat(config=config, enable=False)
 
         self.assertTrue(res)
         mock_post.assert_called_once_with(
@@ -59,7 +60,7 @@ class SendCmd_Actuator(unittest.TestCase):
         mock_response.status_code = 400
         mock_post.return_value = mock_response
 
-        res = Backend.heat.send_heat(config=config,enable=False)
+        res = Backend.heat.send_heat(config=config, enable=False)
         self.assertFalse(res)
 
         mock_post.assert_called_once_with(
@@ -183,7 +184,7 @@ class SendCmd_Actuator(unittest.TestCase):
         # 2nd call (t=10300)
         res2 = Backend.heat.send_heat(config=config, enable=False)
         self.assertTrue(res2)
-        
+
         # 3nd call (t=10600)
         res3 = Backend.heat.send_heat(config=config, enable=False)
         self.assertTrue(res3)

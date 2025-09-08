@@ -2,11 +2,12 @@ import requests
 import logging
 import time
 
-LOGGER=logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 ellapsed_time_before_force_sent: float = 3600.0
 timestamp_on_last_sent: float = 0.0
 status_on_last_sent: bool = None
+
 
 def send_heat(config: dict, enable: bool):
     global timestamp_on_last_sent
@@ -22,7 +23,7 @@ def send_heat(config: dict, enable: bool):
                 "XHR": "1"
             }
         else:
-            params = { 
+            params = {
                 "cmd": f"set {device} off",
                 "XHR": "1"
             }

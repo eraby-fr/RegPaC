@@ -86,7 +86,7 @@ def regulate_heating(setpoint_temperature, temperatures):
     #Ensure no room are not 
     if test_inf(temperatures, (setpoint_temperature - 1.5)):
         enable_heat = True
-        LOGGER.info(f'Force Heating because one of the room is 1° below {setpoint_temperature}')
+        LOGGER.info(f'Force Heating because one of the room is 1.5° below {setpoint_temperature}')
     else :
         average_temperature = sum(measure.temp for measure in temperatures) / len(temperatures)
         if average_temperature < setpoint_temperature:

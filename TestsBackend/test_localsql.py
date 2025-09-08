@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import mock_open, patch
 from Backend.localsql import log_heatvalue_if_change, log_setpoint, reset_previous_state
 
+
 class TestLogHeatValue(unittest.TestCase):
     def setUp(self):
         reset_previous_state()  # Reset state before each test
@@ -12,21 +13,21 @@ class TestLogHeatValue(unittest.TestCase):
         log_heatvalue_if_change(True)
         mock_file().write.assert_called_once()
         self.assertIn("100", mock_file().write.call_args[0][0])
-    
+
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
     def test_initial_log_off(self, mock_makedirs, mock_file):
         log_heatvalue_if_change(False)
         mock_file().write.assert_called_once()
         self.assertIn(" 0", mock_file().write.call_args[0][0])
-    
+
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
     def test_no_duplicate_logs(self, mock_makedirs, mock_file):
         log_heatvalue_if_change(True)
         log_heatvalue_if_change(True)
         mock_file().write.assert_called_once()  # Should only log once
-    
+
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")
     def test_log_state_change(self, mock_makedirs, mock_file):
@@ -59,9 +60,11 @@ class TestLogHeatValue(unittest.TestCase):
         log_entry = mock_file().write.call_args_list[2][0][0]
         self.assertIn("setpoint comfort: 21.0", log_entry)
         self.assertIn("setpoint eco: 18.0", log_entry)
-        
+
         log_entry = mock_file().write.call_args_list[3][0][0]
         self.assertIn("setpoint comfort: 22.0", log_entry)
         self.assertIn("setpoint eco: 19.2", log_entry)
+
+
 if __name__ == "__main__":
     unittest.main()

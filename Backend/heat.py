@@ -9,7 +9,6 @@ timestamp_on_last_sent: float = 0.0
 status_on_last_sent: bool = None
 
 def send_heat(config: dict, enable: bool):
-    global ellapsed_time_before_force_sent
     global timestamp_on_last_sent
     global status_on_last_sent
     now = time.time()

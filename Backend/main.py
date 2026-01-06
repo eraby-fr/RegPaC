@@ -160,6 +160,15 @@ def get_heater_status():
     })
 
 
+@app.route('/tempo', methods=['GET'])
+def get_tempo():
+    """Get Tempo electricity pricing information for today and tomorrow."""
+    return jsonify({
+        "today": tempo_provider.get_today_price().name,
+        "tomorrow": tempo_provider.get_tomorrow_price().name
+    })
+
+
 def load_config() -> dict:
     try:
         with open('/container/config/config.json', 'r') as f:

@@ -202,4 +202,4 @@ if __name__ == '__main__':
     init_app()
     periodic_timer_handler()  # Start the periodic task
     provider_timer_handler()  # Start the Tempo provider periodic task
-    app.run(host='0.0.0.0', port=80, debug=True)
+    app.run(host='0.0.0.0', port=7654, debug=False)

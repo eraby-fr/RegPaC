@@ -1,23 +1,52 @@
 services:
   regpac:
-    image: ghcr.io/eraby-fr/regpac:0.0.6
+    image: ghcr.io/eraby-fr/regpac:0.0.15
     container_name: regpac_container
+    environment:
+      - TZ=Europe/Paris
     volumes:
       - ./config:/container/config/
-      - /tmp/fhem_logs/:/tmp/fhem_logs/
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    ports:
+      - "7654:7654"
+    restart: unless-stopped
     network_mode: "host"
+  regpac-webdashboard:
+    image: ghcr.io/eraby-fr/regpac-webdashboard:0.0.15
+    container_name: regpac_webdashboard_container
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - regpac
   telegraf:
     image: telegraf:1.33.1
     restart: always
+    environment:
+      - TZ=Europe/Paris
     volumes:
       - ./config/telegraf.conf:/etc/telegraf/telegraf.conf:ro
       - /tmp/fhem_logs/:/tmp/fhem_logs/
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     network_mode: "host"
   grafana:
     image: grafana/grafana-arm32v7-linux:7.0.6
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=kern0
+      - TZ=Europe/Paris
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./config/grafana-provisioning/:/etc/grafana/provisioning
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     network_mode: "host"
 volumes:
   grafana-storage:

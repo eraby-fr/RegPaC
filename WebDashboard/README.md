@@ -23,9 +23,9 @@ npm install
 npm run dev
 ```
 
-Le dashboard sera accessible sur `http://localhost:3000`
+Le dashboard sera accessible sur `http://localhost:80`
 
-**Note:** Le backend Flask doit être en cours d'exécution sur le port 80 pour que l'API fonctionne.
+**Note:** Le backend Flask doit être en cours d'exécution sur le port 7654 pour que l'API fonctionne.
 
 ## Build pour la production
 
@@ -42,7 +42,7 @@ Le fichier `vite.config.js` contient un proxy configuré pour rediriger les appe
 ```javascript
 proxy: {
   '/api': {
-    target: 'http://localhost:80',
+    target: 'http://localhost:7654',
     changeOrigin: true,
     rewrite: (path) => path.replace(/^\/api/, '')
   }

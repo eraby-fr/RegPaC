@@ -1,0 +1,55 @@
+FROM python:3.11-slim-bookworm
+
+# Install Node.js 18.x (LTS, compatible with Raspberry Pi 3B ARMv7)
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY WebDashboard/package*.json ./
+
+# Install all dependencies (including devDependencies needed for build)
+RUN npm ci
+
+# Copy application source
+COPY WebDashboard/ ./
+
+# Build the application
+RUN npm run build
+
+# Clean up node_modules to reduce image size
+RUN rm -rf node_modules
+
+# Create a simple Python HTTP server script
+RUN echo '#!/usr/bin/env python3\n\
+import http.server\n\
+import socketserver\n\
+import os\n\
+\n\
+PORT = 80\n\
+DIRECTORY = "/app/dist"\n\
+\n\
+class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):\n\
+    def __init__(self, *args, **kwargs):\n\
+        super().__init__(*args, directory=DIRECTORY, **kwargs)\n\
+    \n\
+    def end_headers(self):\n\
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")\n\
+        self.send_header("Pragma", "no-cache")\n\
+        self.send_header("Expires", "0")\n\
+        super().end_headers()\n\
+\n\
+with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:\n\
+    print(f"Server running at http://0.0.0.0:{PORT}/")\n\
+    print(f"Serving files from {DIRECTORY}")\n\
+    httpd.serve_forever()\n\
+' > /app/server.py && chmod +x /app/server.py
+
+EXPOSE 80
+
+CMD ["python3", "/app/server.py"]

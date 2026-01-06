@@ -9,4 +9,4 @@ COPY Backend/* .
 
 CMD [ "python", "./main.py" ]
 
-EXPOSE 80
+EXPOSE 7654

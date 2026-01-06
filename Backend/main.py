@@ -7,6 +7,7 @@ from datetime import datetime
 from temperature import collect_temperatures
 from localsql import log_heatvalue_if_change, log_setpoint, log_dbg_setpoint
 from heat import send_heat
+from tempo_provider import TempoProvider, DayPrice
 import logging
 import sys
 
@@ -16,10 +17,11 @@ app = Flask(__name__)
 
 config: dict = {}
 
-set_comfort_temp: float = 0.0
-set_eco_temp: float = 0.0
+set_off_peak_temp: float = 0.0
+set_full_cost_temp: float = 0.0
 
 temperatures_sources = []
+tempo_provider: TempoProvider = None
 
 
 def heat(on: bool):
@@ -57,25 +59,23 @@ def weights_the_temp_setting() -> float:
     # Here is the cool stuff
     current_time_str: str = get_current_hour_min()
 
-    # Rule 1 : comfort or Eco T° due to electricity price
+    # Rule 1 : comfort or Eco T° due to electricity price + Rule 2 : Take care of Tempo pricing
     if is_in_off_peak(current_time_str):
-        setpoint_temperature = set_comfort_temp
+        setpoint_temperature = set_off_peak_temp
+        if tempo_provider.get_tomorrow_price() == DayPrice.HIGH:
+            increase_temp = config['tempo']['temperature_increase_prior_to_high_cost']
+            setpoint_temperature += increase_temp
+            LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (off_peak + {increase_temp}° due to Tempo tomorrow Red day)')
+        else:
+            LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (off_peak)')
     else:
-        setpoint_temperature = set_eco_temp
-
-    LOGGER.info(f'Weight_Setpoint : Step01-offpeak : setpoint={setpoint_temperature}')
-
-    # Rule 2 : reduce T° during deep night
-    # deep_night_start = datetime.strptime(config['off_peak']['start'], '%H:%M')
-    # deep_night_end = datetime.strptime(config['off_peak']['end'], '%H:%M')
-
-    # ToDo
-
-    # Rule 3 : hysteresys to avoid ping/pong
-    # ToDo
-
-    # Rule 4 : Use forecast to start heating during afternoon even if home is hot in order to avoid a sharp drop in temperature
-    # ToDo
+        setpoint_temperature = set_full_cost_temp
+        if tempo_provider.get_today_price() == DayPrice.HIGH:
+            decrease_temp = config['tempo']['temperature_reduction_high_cost']
+            setpoint_temperature += decrease_temp
+            LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (full_cost + {decrease_temp}° due to Tempo today Red day)')
+        else:
+            LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (full_cost)')
 
     return setpoint_temperature
 
@@ -109,23 +109,23 @@ def regulate_heating(setpoint_temperature, temperatures):
 @app.route('/setpoint', methods=['GET'])
 def get_setpoint_temperature():
     return jsonify({
-        "comfort_temp": set_comfort_temp,
-        "eco_temp": set_eco_temp
+        "comfort_temp": set_off_peak_temp,
+        "eco_temp": set_full_cost_temp
     })
 
 
 @app.route('/setpoint', methods=['POST'])
 def set_setpoint_temperature() -> str:
-    global set_comfort_temp, set_eco_temp
+    global set_off_peak_temp, set_full_cost_temp
     try:
-        set_comfort_temp = float(request.json['comfort_temp'])
-        set_eco_temp = float(request.json['eco_temp'])
+        set_off_peak_temp = float(request.json['off_peak_cost'])
+        set_full_cost_temp = float(request.json['full_cost'])
         # Update config file
-        config['set_temperature']['comfort'] = set_comfort_temp
-        config['set_temperature']['eco'] = set_eco_temp
+        config['set_temperature']['off_peak_cost'] = set_off_peak_temp
+        config['set_temperature']['full_cost'] = set_full_cost_temp
         with open('/container/config/config.json', 'w') as f:
             json.dump(config, f, indent=4)
-        log_setpoint(comfort_temp=set_comfort_temp, eco_temp=set_eco_temp)
+        log_setpoint(comfort_temp=set_off_peak_temp, eco_temp=set_full_cost_temp)
         periodic_tasks()
         return jsonify({"message": "setpoint temperature updated"}), 200
     except (KeyError, ValueError):
@@ -144,11 +144,12 @@ def load_config() -> dict:
 
 
 def init_app():
-    global config, set_comfort_temp, set_eco_temp
+    global config, set_off_peak_temp, set_full_cost_temp, tempo_provider
     config = load_config()
-    set_comfort_temp = config['set_temperature']['comfort']
-    set_eco_temp = config['set_temperature']['eco']
-    log_setpoint(comfort_temp=set_comfort_temp, eco_temp=set_eco_temp)
+    set_off_peak_temp = config['set_temperature']['off_peak_cost']
+    set_full_cost_temp = config['set_temperature']['full_cost']
+    log_setpoint(comfort_temp=set_off_peak_temp, eco_temp=set_full_cost_temp)
+    tempo_provider = TempoProvider()
 
 
 def periodic_timer_handler():
@@ -156,8 +157,14 @@ def periodic_timer_handler():
     Timer(config['app']['pooling_frequency'], periodic_timer_handler).start()
 
 
+def provider_timer_handler():
+    tempo_provider.update()
+    Timer(config['app']['pooling_provider_frequency'], provider_timer_handler).start()
+
+
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.INFO)
     init_app()
     periodic_timer_handler()  # Start the periodic task
+    provider_timer_handler()  # Start the Tempo provider periodic task
     app.run(host='0.0.0.0', port=80, debug=True)

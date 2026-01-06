@@ -12,9 +12,6 @@ class Measure:
         self.name = name
         self.timestamp = timestamp
 
-    def print(self):
-        LOGGER.info(f"{self.name} : {self.temp}°C - collected at {self.timestamp}")
-
 
 def collect_temperatures(config: dict):
     temperatures_sources = []
@@ -23,8 +20,12 @@ def collect_temperatures(config: dict):
         temp, time = send_request(url=config['fhem']['url'], device=sensor['device'])
         if temp is not None and time is not None:
             meas = Measure(temperature=float(temp), name=sensor['name'], timestamp=datetime.strptime(time, "%Y-%m-%d %H:%M:%S"))
-            meas.print()
             temperatures_sources.append(meas)
+
+    # Print all sensor values in one line
+    if temperatures_sources:
+        sensor_values = " | ".join([f"{m.name}: {m.temp}°C" for m in temperatures_sources])
+        LOGGER.info(f"Temperatures: {sensor_values}")
 
     return temperatures_sources
 

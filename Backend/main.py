@@ -158,10 +158,7 @@ def periodic_timer_handler():
 
 
 def provider_timer_handler():
-    """Periodically update Tempo provider data."""
-    global tempo_provider
-    if tempo_provider:
-        tempo_provider.update()
+    tempo_provider.update()
     Timer(config['app']['pooling_provider_frequency'], provider_timer_handler).start()
 
 

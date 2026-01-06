@@ -157,13 +157,13 @@ class TempoProviderTestCase(unittest.TestCase):
         blue_response = MagicMock()
         blue_response.status_code = 200
         blue_response.json.return_value = {"codeJour": 1, "libCouleur": "Bleu"}
-        
+
         white_response = MagicMock()
         white_response.status_code = 200
         white_response.json.return_value = {"codeJour": 2, "libCouleur": "Blanc"}
-        
+
         mock_get.side_effect = [blue_response, white_response]
-        
+
         self.provider.update()
         self.assertEqual(self.provider.get_today_price(), DayPrice.LOW)
         self.assertEqual(self.provider.get_tomorrow_price(), DayPrice.NORMAL)
@@ -175,27 +175,27 @@ class TempoProviderTestCase(unittest.TestCase):
         first_today = MagicMock()
         first_today.status_code = 200
         first_today.json.return_value = {"codeJour": 1, "libCouleur": "Bleu"}
-        
+
         first_tomorrow = MagicMock()
         first_tomorrow.status_code = 200
         first_tomorrow.json.return_value = {"codeJour": 2, "libCouleur": "Blanc"}
-        
+
         # Second update
         second_today = MagicMock()
         second_today.status_code = 200
         second_today.json.return_value = {"codeJour": 3, "libCouleur": "Rouge"}
-        
+
         second_tomorrow = MagicMock()
         second_tomorrow.status_code = 200
         second_tomorrow.json.return_value = {"codeJour": 1, "libCouleur": "Bleu"}
-        
+
         mock_get.side_effect = [first_today, first_tomorrow, second_today, second_tomorrow]
-        
+
         # First update
         self.provider.update()
         self.assertEqual(self.provider.get_today_price(), DayPrice.LOW)
         self.assertEqual(self.provider.get_tomorrow_price(), DayPrice.NORMAL)
-        
+
         # Second update
         self.provider.update()
         self.assertEqual(self.provider.get_today_price(), DayPrice.HIGH)

@@ -1,7 +1,6 @@
 import requests
 import logging
 from enum import Enum
-from datetime import datetime
 from typing import Optional
 
 LOGGER = logging.getLogger(__name__)
@@ -43,16 +42,6 @@ class TempoProvider:
             return DayPrice.UNKNOWN
 
     def _fetch_tempo_day(self, endpoint: str) -> Optional[dict]:
-        """
-        Fetch Tempo day information from the API.
-        
-        Args:
-            endpoint: Either 'today' or 'tomorrow'
-            
-        Returns:
-            Dict with structure: {"dateJour":"2026-01-06","codeJour":3,"periode":"2025-2026","libCouleur":"Rouge"}
-            or None if request fails
-        """
         try:
             url = f"{self.BASE_URL}/{endpoint}"
             LOGGER.info(f"Fetching Tempo data from: {url}")
@@ -73,7 +62,7 @@ class TempoProvider:
 
     def update(self):
         LOGGER.info("Updating Tempo provider data...")
-        
+
         # Fetch today's data
         today_data = self._fetch_tempo_day("today")
         if today_data:
@@ -83,8 +72,7 @@ class TempoProvider:
         else:
             self._today_price = DayPrice.UNKNOWN
             LOGGER.warning("Failed to update today's Tempo price")
-        
-        # Fetch tomorrow's data
+
         tomorrow_data = self._fetch_tempo_day("tomorrow")
         if tomorrow_data:
             self._tomorrow_data = tomorrow_data

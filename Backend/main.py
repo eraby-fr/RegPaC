@@ -6,7 +6,7 @@ from datetime import datetime
 
 from temperature import collect_temperatures
 from localsql import log_heatvalue_if_change, log_setpoint, log_dbg_setpoint
-from heat import send_heat
+from heat import send_heat, get_heat_status
 import heat
 from tempo_provider import TempoProvider, DayPrice
 import logging
@@ -110,8 +110,8 @@ def regulate_heating(setpoint_temperature, temperatures):
 @app.route('/setpoint', methods=['GET'])
 def get_setpoint_temperature():
     return jsonify({
-        "comfort_temp": set_off_peak_temp,
-        "eco_temp": set_full_cost_temp
+        "off_peak_temp": set_off_peak_temp,
+        "full_cost_temp": set_full_cost_temp
     })
 
 
@@ -154,8 +154,9 @@ def get_temperatures():
 @app.route('/heater/status', methods=['GET'])
 def get_heater_status():
     """Get the current status of the heater."""
+    status = get_heat_status()
     return jsonify({
-        "heater_on": heat.status_on_last_sent if heat.status_on_last_sent is not None else False,
+        "heater_on": status if status is not None else False,
         "last_update": heat.timestamp_on_last_sent
     })
 

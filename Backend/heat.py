@@ -42,3 +42,6 @@ def send_heat(config: dict, enable: bool):
             return False
     else:
         return True
+
+def get_heat_status() -> bool:
+    return status_on_last_sent

@@ -1,7 +1,8 @@
 {
     "app":
     {
-        "pooling_frequency":20
+        "pooling_frequency": 20,
+        "pooling_provider_frequency": 10800
     },
     "fhem":
     {
@@ -22,8 +23,8 @@
         "device":"EnO_AAAAAAAA"
     },
     "set_temperature": {
-        "comfort": 20.5,
-        "eco": 19.0
+        "off_peak_cost": 20.5,
+        "full_cost": 19.0
     },
     "off_peak": [
         {
@@ -35,8 +36,8 @@
             "end": "14:00"
         }
     ],
-    "deep_night": {
-            "start": "00:30",
-            "end": "05:00"
-        }
+    "tempo": {
+        "temperature_reduction_high_cost": -2.0,
+        "temperature_increase_prior_to_high_cost": 2.0
+    }
 }

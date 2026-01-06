@@ -7,6 +7,7 @@ from datetime import datetime
 from temperature import collect_temperatures
 from localsql import log_heatvalue_if_change, log_setpoint, log_dbg_setpoint
 from heat import send_heat
+import heat
 from tempo_provider import TempoProvider, DayPrice
 import logging
 import sys
@@ -132,6 +133,31 @@ def set_setpoint_temperature() -> str:
         return jsonify({"error": "Invalid setpoint temperature value"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/temperatures', methods=['GET'])
+def get_temperatures():
+    """Get all collected temperatures from sensors."""
+    temperatures_data = []
+    for measure in temperatures_sources:
+        temperatures_data.append({
+            "name": measure.name,
+            "temperature": measure.temp,
+            "timestamp": measure.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        })
+    return jsonify({
+        "temperatures": temperatures_data,
+        "count": len(temperatures_data)
+    })
+
+
+@app.route('/heater/status', methods=['GET'])
+def get_heater_status():
+    """Get the current status of the heater."""
+    return jsonify({
+        "heater_on": heat.status_on_last_sent if heat.status_on_last_sent is not None else False,
+        "last_update": heat.timestamp_on_last_sent
+    })
 
 
 def load_config() -> dict:

@@ -107,6 +107,20 @@ function App() {
     ? (temperatures.reduce((sum, t) => sum + t.temperature, 0) / temperatures.length).toFixed(1)
     : 0
 
+  const isTimestampOld = (timestamp) => {
+    if (!timestamp) return false
+    const sensorTime = new Date(timestamp)
+    const now = new Date()
+    const diffMinutes = (now - sensorTime) / (1000 * 60)
+    return diffMinutes > 30
+  }
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return ''
+    const date = new Date(timestamp)
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  }
+
   const getTempoStyles = (price) => {
     switch (price) {
       case 'LOW':
@@ -232,8 +246,17 @@ function App() {
                     className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors"
                   >
                     <Thermometer className="w-4 h-4 text-primary-400" />
-                    <span className="text-sm font-medium text-gray-700">{sensor.name}</span>
-                    <span className="text-lg font-bold text-primary-600">{sensor.temperature.toFixed(1)}°C</span>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">{sensor.name}</span>
+                        <span className="text-lg font-bold text-primary-600">{sensor.temperature.toFixed(1)}°C</span>
+                      </div>
+                      {sensor.timestamp && (
+                        <span className={`text-xs ${isTimestampOld(sensor.timestamp) ? 'text-orange-500 font-semibold' : 'text-gray-400'}`}>
+                          {formatTimestamp(sensor.timestamp)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

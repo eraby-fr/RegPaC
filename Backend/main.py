@@ -156,8 +156,7 @@ def get_heater_status():
     """Get the current status of the heater."""
     status = get_heat_status()
     return jsonify({
-        "heater_on": status if status is not None else False,
-        "last_update": heat.timestamp_on_last_sent
+        "heater_on": status if status is not None else False
     })
 
 

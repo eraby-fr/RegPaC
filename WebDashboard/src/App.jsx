@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Thermometer, Flame, Settings, RefreshCw, AlertCircle } from 'lucide-react'
+import { Thermometer, Flame, Settings, RefreshCw, AlertCircle, Zap } from 'lucide-react'
 
 function App() {
   const [temperatures, setTemperatures] = useState([])
@@ -11,6 +11,7 @@ function App() {
   const [error, setError] = useState(null)
   const [errorExpanded, setErrorExpanded] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
+  const [tempo, setTempo] = useState({ today: 'UNKNOWN', tomorrow: 'UNKNOWN' })
 
   const API_BASE = '/api'
 
@@ -48,6 +49,13 @@ function App() {
         off_peak_cost: setpointData.off_peak_temp,
         full_cost: setpointData.full_cost_temp
       })
+
+      // Fetch tempo data
+      const tempoResponse = await fetch(`${API_BASE}/tempo`)
+      if (tempoResponse.ok) {
+        const tempoData = await tempoResponse.json()
+        setTempo(tempoData)
+      }
 
       setLastUpdate(new Date())
       setLoading(false)
@@ -88,6 +96,35 @@ function App() {
     ? (temperatures.reduce((sum, t) => sum + t.temperature, 0) / temperatures.length).toFixed(1)
     : 0
 
+  const getTempoStyles = (price) => {
+    switch (price) {
+      case 'LOW':
+        return {
+          bg: 'bg-gradient-to-br from-blue-400 to-blue-600',
+          text: 'text-white',
+          label: 'Bleu - Tarif bas'
+        }
+      case 'NORMAL':
+        return {
+          bg: 'bg-gradient-to-br from-gray-300 to-gray-400',
+          text: 'text-gray-800',
+          label: 'Blanc - Tarif normal'
+        }
+      case 'HIGH':
+        return {
+          bg: 'bg-gradient-to-br from-red-500 to-red-700',
+          text: 'text-white',
+          label: 'Rouge - Tarif élevé'
+        }
+      default: // UNKNOWN
+        return {
+          bg: 'bg-gradient-to-br from-orange-400 to-orange-600',
+          text: 'text-white',
+          label: 'Inconnu'
+        }
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -102,7 +139,6 @@ function App() {
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2 flex items-center gap-3">
             <Thermometer className="w-10 h-10 md:w-12 md:h-12 text-primary-500" />
@@ -139,9 +175,7 @@ function App() {
           </div>
         )}
 
-        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Heater Status Card */}
           <div className={`lg:col-span-1 rounded-2xl shadow-xl p-6 transition-all duration-300 ${
             heaterStatus 
               ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white' 
@@ -161,7 +195,6 @@ function App() {
             </div>
           </div>
 
-          {/* Average Temperature Card */}
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">Température Moyenne</h2>
@@ -181,7 +214,6 @@ function App() {
                 Moyenne de {temperatures.length} capteur{temperatures.length > 1 ? 's' : ''}
               </div>
               
-              {/* Compact display of all sensors */}
               <div className="flex flex-wrap justify-center gap-3 mt-6 pt-4 border-t border-gray-200">
                 {temperatures.map((sensor, index) => (
                   <div
@@ -198,8 +230,6 @@ function App() {
           </div>
         </div>
 
-
-        {/* Setpoints Configuration */}
         <div className="mt-6 bg-white rounded-2xl shadow-xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -217,7 +247,6 @@ function App() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Off-Peak Temperature */}
             <div className="border-2 border-orange-100 rounded-xl p-6 bg-gradient-to-br from-orange-50 to-white">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-3 h-3 rounded-full bg-orange-500"></div>
@@ -249,7 +278,6 @@ function App() {
               )}
             </div>
 
-            {/* Full Cost Temperature */}
             <div className="border-2 border-primary-100 rounded-xl p-6 bg-gradient-to-br from-primary-50 to-white">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
@@ -306,7 +334,44 @@ function App() {
           )}
         </div>
 
-        {/* Footer */}
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <Zap className="w-6 h-6 text-yellow-500" />
+            Tarification Tempo
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`rounded-2xl shadow-xl p-6 ${getTempoStyles(tempo.today).bg} ${getTempoStyles(tempo.today).text}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">Aujourd'hui</h3>
+                <Zap className="w-6 h-6" />
+              </div>
+              <div className="text-center py-4">
+                <div className="text-4xl font-bold mb-2">
+                  {tempo.today}
+                </div>
+                <div className="text-sm opacity-90">
+                  {getTempoStyles(tempo.today).label}
+                </div>
+              </div>
+            </div>
+
+            <div className={`rounded-2xl shadow-xl p-6 ${getTempoStyles(tempo.tomorrow).bg} ${getTempoStyles(tempo.tomorrow).text}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">Demain</h3>
+                <Zap className="w-6 h-6" />
+              </div>
+              <div className="text-center py-4">
+                <div className="text-4xl font-bold mb-2">
+                  {tempo.tomorrow}
+                </div>
+                <div className="text-sm opacity-90">
+                  {getTempoStyles(tempo.tomorrow).label}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-8 text-center text-gray-400 text-sm">
           <p>RegPaC - Système de régulation de chauffage intelligent</p>
         </div>

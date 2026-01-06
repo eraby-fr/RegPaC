@@ -4,9 +4,9 @@ Dockerfile pour créer une image Docker légère du WebDashboard RegPaC, compati
 
 ## Caractéristiques
 
-- **Base**: `python:3.11-slim-bookworm` (layers mutualisés avec le backend)
-- **Build**: Node.js 18.x LTS pour compiler l'application Vite/React
-- **Runtime**: Serveur HTTP Python simple et léger
+- **Build stage**: `python:3.11-slim-bookworm` avec Node.js 18.x LTS pour compiler l'application Vite/React
+- **Runtime stage**: `nginx:1.25-alpine` - serveur web léger avec reverse proxy
+- **Reverse proxy**: Les requêtes `/api/*` sont automatiquement proxifiées vers le backend RegPaC
 - **Compatible**: Raspberry Pi 3B (ARM32v7) et autres architectures
 - **Port**: 80
 
@@ -30,6 +30,16 @@ docker run -d \
 
 Le dashboard sera accessible sur `http://localhost:80`
 
+## Configuration du reverse proxy
+
+Le fichier `nginx.conf` configure le reverse proxy pour rediriger les requêtes `/api/*` vers le backend RegPaC sur `http://192.168.0.3:7654`.
+
+Si votre backend est sur une autre adresse, modifiez la ligne suivante dans `nginx.conf` :
+
+```nginx
+proxy_pass http://192.168.0.3:7654/;
+```
+
 ## Build multi-architecture (optionnel)
 
 Pour builder pour Raspberry Pi depuis une autre architecture :
@@ -44,7 +54,9 @@ docker buildx build \
 
 ## Notes
 
-- L'application est buildée pendant la création de l'image
+- **Multi-stage build** : L'image utilise un build en deux étapes pour optimiser la taille finale
+- **Build stage** : Python + Node.js pour compiler l'application React/Vite
+- **Runtime stage** : Nginx seulement pour un runtime léger
+- **Reverse proxy intégré** : Nginx proxifie automatiquement `/api/*` vers le backend, évitant les problèmes CORS
 - Les fichiers statiques sont servis depuis `/app/dist`
-- Le serveur Python inclut des headers no-cache pour éviter les problèmes de mise à jour
-- Les `node_modules` sont supprimés après le build pour réduire la taille de l'image
+- Headers no-cache configurés pour éviter les problèmes de mise à jour du cache

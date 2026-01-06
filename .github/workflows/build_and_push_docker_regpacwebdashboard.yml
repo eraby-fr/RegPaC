@@ -1,4 +1,4 @@
-name: Build & push Docker Regpac
+name: Build & push Docker Web Dashboard
 
 on:
   # Trigger the action manually from the UI

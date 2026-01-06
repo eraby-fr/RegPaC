@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react'
-import { Thermometer, Flame, Settings, RefreshCw, AlertCircle, Zap } from 'lucide-react'
+import { Thermometer, Flame, Settings, RefreshCw, AlertCircle, Zap, Plus, Minus } from 'lucide-react'
 
 function App() {
   const [temperatures, setTemperatures] = useState([])
   const [heaterStatus, setHeaterStatus] = useState(false)
   const [setpoints, setSetpoints] = useState({ off_peak_temp: 0, full_cost_temp: 0 })
-  const [editMode, setEditMode] = useState(false)
-  const [newSetpoints, setNewSetpoints] = useState({ off_peak_cost: 0, full_cost: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [errorExpanded, setErrorExpanded] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
   const [tempo, setTempo] = useState({ today: 'UNKNOWN', tomorrow: 'UNKNOWN' })
+  const [successNotification, setSuccessNotification] = useState({ off_peak: false, full_cost: false })
 
   const API_BASE = '/api'
 
@@ -45,10 +44,6 @@ function App() {
       }
       const setpointData = await setpointResponse.json()
       setSetpoints(setpointData)
-      setNewSetpoints({
-        off_peak_cost: setpointData.off_peak_temp,
-        full_cost: setpointData.full_cost_temp
-      })
 
       // Fetch tempo data
       const tempoResponse = await fetch(`${API_BASE}/tempo`)
@@ -66,24 +61,40 @@ function App() {
     }
   }
 
-  const updateSetpoints = async () => {
+  const updateSetpoint = async (type, newValue) => {
     try {
+      const updateData = {
+        off_peak_cost: type === 'off_peak' ? newValue : setpoints.off_peak_temp,
+        full_cost: type === 'full_cost' ? newValue : setpoints.full_cost_temp
+      }
+
       const response = await fetch(`${API_BASE}/setpoint`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newSetpoints),
+        body: JSON.stringify(updateData),
       })
 
       if (!response.ok) throw new Error('Erreur lors de la mise à jour des consignes')
       
+      // Show success notification
+      setSuccessNotification(prev => ({ ...prev, [type]: true }))
+      setTimeout(() => {
+        setSuccessNotification(prev => ({ ...prev, [type]: false }))
+      }, 1000)
+      
       await fetchData()
-      setEditMode(false)
     } catch (err) {
       setError(err.message)
       setErrorExpanded(false)
     }
+  }
+
+  const adjustSetpoint = (type, delta) => {
+    const currentValue = type === 'off_peak' ? setpoints.off_peak_temp : setpoints.full_cost_temp
+    const newValue = Math.round((currentValue + delta) * 2) / 2 // Round to nearest 0.5
+    updateSetpoint(type, newValue)
   }
 
   useEffect(() => {
@@ -231,107 +242,84 @@ function App() {
         </div>
 
         <div className="mt-6 bg-white rounded-2xl shadow-xl p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
               <Settings className="w-6 h-6 text-primary-500" />
               Consignes de Température
             </h2>
-            {!editMode && (
-              <button
-                onClick={() => setEditMode(true)}
-                className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
-              >
-                Modifier
-              </button>
-            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="border-2 border-orange-100 rounded-xl p-6 bg-gradient-to-br from-orange-50 to-white">
+            <div className={`border-2 rounded-xl p-6 transition-all duration-300 ${
+              successNotification.off_peak 
+                ? 'border-green-400 bg-gradient-to-br from-green-100 to-green-50' 
+                : 'border-orange-100 bg-gradient-to-br from-orange-50 to-white'
+            }`}>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <div className={`w-3 h-3 rounded-full ${successNotification.off_peak ? 'bg-green-500' : 'bg-orange-500'}`}></div>
                 <h3 className="font-bold text-lg text-gray-800">Heures Creuses</h3>
               </div>
-              {editMode ? (
-                <div className="space-y-3">
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={newSetpoints.off_peak_cost}
-                    onChange={(e) => setNewSetpoints({
-                      ...newSetpoints,
-                      off_peak_cost: parseFloat(e.target.value)
-                    })}
-                    className="w-full text-4xl font-bold text-orange-600 border-2 border-orange-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                  <div className="text-sm text-gray-500">°C</div>
-                </div>
-              ) : (
-                <div>
-                  <div className="text-5xl font-bold text-orange-600">
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => adjustSetpoint('off_peak', -0.5)}
+                  className="p-3 rounded-full bg-orange-200 hover:bg-orange-300 transition-colors"
+                  title="Diminuer de 0.5°C"
+                >
+                  <Minus className="w-6 h-6 text-orange-700" />
+                </button>
+                <div className="text-center">
+                  <div className={`text-5xl font-bold ${successNotification.off_peak ? 'text-green-600' : 'text-orange-600'}`}>
                     {setpoints.off_peak_temp}°C
                   </div>
                   <div className="text-sm text-gray-500 mt-2">
                     Température confort (tarif réduit)
                   </div>
                 </div>
-              )}
+                <button
+                  onClick={() => adjustSetpoint('off_peak', 0.5)}
+                  className="p-3 rounded-full bg-orange-200 hover:bg-orange-300 transition-colors"
+                  title="Augmenter de 0.5°C"
+                >
+                  <Plus className="w-6 h-6 text-orange-700" />
+                </button>
+              </div>
             </div>
 
-            <div className="border-2 border-primary-100 rounded-xl p-6 bg-gradient-to-br from-primary-50 to-white">
+            <div className={`border-2 rounded-xl p-6 transition-all duration-300 ${
+              successNotification.full_cost 
+                ? 'border-green-400 bg-gradient-to-br from-green-100 to-green-50' 
+                : 'border-primary-100 bg-gradient-to-br from-primary-50 to-white'
+            }`}>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <div className={`w-3 h-3 rounded-full ${successNotification.full_cost ? 'bg-green-500' : 'bg-green-500'}`}></div>
                 <h3 className="font-bold text-lg text-gray-800">Heures Pleines</h3>
               </div>
-              {editMode ? (
-                <div className="space-y-3">
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={newSetpoints.full_cost}
-                    onChange={(e) => setNewSetpoints({
-                      ...newSetpoints,
-                      full_cost: parseFloat(e.target.value)
-                    })}
-                    className="w-full text-4xl font-bold text-primary-600 border-2 border-primary-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                  <div className="text-sm text-gray-500">°C</div>
-                </div>
-              ) : (
-                <div>
-                  <div className="text-5xl font-bold text-primary-600">
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => adjustSetpoint('full_cost', -0.5)}
+                  className="p-3 rounded-full bg-primary-200 hover:bg-primary-300 transition-colors"
+                  title="Diminuer de 0.5°C"
+                >
+                  <Minus className="w-6 h-6 text-primary-700" />
+                </button>
+                <div className="text-center">
+                  <div className={`text-5xl font-bold ${successNotification.full_cost ? 'text-green-600' : 'text-primary-600'}`}>
                     {setpoints.full_cost_temp}°C
                   </div>
                   <div className="text-sm text-gray-500 mt-2">
                     Température éco (tarif plein)
                   </div>
                 </div>
-              )}
+                <button
+                  onClick={() => adjustSetpoint('full_cost', 0.5)}
+                  className="p-3 rounded-full bg-primary-200 hover:bg-primary-300 transition-colors"
+                  title="Augmenter de 0.5°C"
+                >
+                  <Plus className="w-6 h-6 text-primary-700" />
+                </button>
+              </div>
             </div>
           </div>
-
-          {editMode && (
-            <div className="flex gap-3 mt-6 justify-end">
-              <button
-                onClick={() => {
-                  setEditMode(false)
-                  setNewSetpoints({
-                    off_peak_cost: setpoints.off_peak_temp,
-                    full_cost: setpoints.full_cost_temp
-                  })
-                }}
-                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={updateSetpoints}
-                className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
-              >
-                Enregistrer
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="mt-6">

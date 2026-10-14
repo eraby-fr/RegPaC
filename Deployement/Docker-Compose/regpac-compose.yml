@@ -1,6 +1,6 @@
 services:
   regpac:
-    image: ghcr.io/eraby-fr/regpac:0.0.15
+    image: ghcr.io/eraby-fr/regpac:1.0.0
     container_name: regpac_container
     environment:
       - TZ=Europe/Paris
@@ -8,12 +8,12 @@ services:
       - ./config:/container/config/
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-    ports:
-      - "7654:7654"
+    # No "ports" mapping here : network_mode host already publishes 7654 on the
+    # host, and docker ignores (and warns about) port mappings in that mode.
     restart: unless-stopped
     network_mode: "host"
   regpac-webdashboard:
-    image: ghcr.io/eraby-fr/regpac-webdashboard:0.0.15
+    image: ghcr.io/eraby-fr/regpac-webdashboard:1.0.0
     container_name: regpac_webdashboard_container
     environment:
       - TZ=Europe/Paris

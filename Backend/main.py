@@ -1,13 +1,13 @@
 from flask import Flask, jsonify, request
-from threading import Timer
+from threading import Thread
 import json
+import time
 
 from datetime import datetime
 
 from temperature import collect_temperatures
 from localsql import log_heatvalue_if_change, log_setpoint, log_dbg_setpoint
 from heat import send_heat, get_heat_status
-import heat
 from tempo_provider import TempoProvider, DayPrice
 import logging
 import sys
@@ -52,29 +52,36 @@ def is_in_off_peak(current_time_str: str) -> bool:
     return False
 
 
+def get_now() -> datetime:
+    return datetime.now()
+
+
 def get_current_hour_min() -> str:
-    return datetime.now().strftime('%H:%M')
+    return get_now().strftime('%H:%M')
 
 
 def weights_the_temp_setting() -> float:
     # Here is the cool stuff
+    # One single clock reading drives both the off-peak window and the Tempo day.
+    now = get_now()
     current_time_str: str = get_current_hour_min()
 
     # Rule 1 : comfort or Eco T° due to electricity price + Rule 2 : Take care of Tempo pricing
+    # Both rules reason on Tempo days (06:00 -> 06:00), not on calendar days.
     if is_in_off_peak(current_time_str):
         setpoint_temperature = set_off_peak_temp
-        if tempo_provider.get_tomorrow_price() == DayPrice.HIGH:
+        if tempo_provider.get_price_for_upcoming_tempo_day(now) == DayPrice.HIGH:
             increase_temp = config['tempo']['temperature_increase_prior_to_high_cost']
             setpoint_temperature += increase_temp
-            LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (off_peak + {increase_temp}° due to Tempo tomorrow Red day)')
+            LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (off_peak + {increase_temp}° due to upcoming Tempo Red day)')
         else:
             LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (off_peak)')
     else:
         setpoint_temperature = set_full_cost_temp
-        if tempo_provider.get_today_price() == DayPrice.HIGH:
+        if tempo_provider.get_price_for_current_tempo_day(now) == DayPrice.HIGH:
             decrease_temp = config['tempo']['temperature_reduction_high_cost']
             setpoint_temperature += decrease_temp
-            LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (full_cost + {decrease_temp}° due to Tempo today Red day)')
+            LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (full_cost + {decrease_temp}° due to ongoing Tempo Red day)')
         else:
             LOGGER.info(f'Weight_Setpoint : {setpoint_temperature} (full_cost)')
 
@@ -162,10 +169,22 @@ def get_heater_status():
 
 @app.route('/tempo', methods=['GET'])
 def get_tempo():
-    """Get Tempo electricity pricing information for today and tomorrow."""
+    """Get Tempo electricity pricing information for today and tomorrow.
+
+    Each colour comes with the status explaining it, so that "not published
+    yet", "API unreachable" and "frozen for days" are no longer reported as the
+    same UNKNOWN. last_update tells when the API was last reached.
+    """
+    last_success = tempo_provider.get_last_success()
     return jsonify({
         "today": tempo_provider.get_today_price().name,
-        "tomorrow": tempo_provider.get_tomorrow_price().name
+        "tomorrow": tempo_provider.get_tomorrow_price().name,
+        "today_status": tempo_provider.get_today_status().name,
+        "tomorrow_status": tempo_provider.get_tomorrow_status().name,
+        "current_tempo_day": tempo_provider.get_price_for_current_tempo_day().name,
+        "upcoming_tempo_day": tempo_provider.get_price_for_upcoming_tempo_day().name,
+        "last_update": last_success.strftime("%Y-%m-%d %H:%M:%S") if last_success else None,
+        "stale": tempo_provider.is_stale()
     })
 
 
@@ -184,22 +203,45 @@ def init_app():
     set_off_peak_temp = config['set_temperature']['off_peak_cost']
     set_full_cost_temp = config['set_temperature']['full_cost']
     log_setpoint(comfort_temp=set_off_peak_temp, eco_temp=set_full_cost_temp)
-    tempo_provider = TempoProvider()
+    # Trust a Tempo colour for three refresh periods, then report it as stale.
+    tempo_provider = TempoProvider(stale_after_s=3 * config['app']['pooling_provider_frequency'])
 
 
-def periodic_timer_handler():
-    periodic_tasks()
-    Timer(config['app']['pooling_frequency'], periodic_timer_handler).start()
+def run_safely(task, name: str):
+    """Run task once, logging and swallowing any failure."""
+    try:
+        task()
+    except Exception:
+        LOGGER.exception(f'{name} failed, will retry at next cycle')
 
 
-def provider_timer_handler():
-    tempo_provider.update()
-    Timer(config['app']['pooling_provider_frequency'], provider_timer_handler).start()
+def start_periodic_thread(task, period_getter, name: str):
+    """Run task forever in a daemon thread, surviving its own failures.
+
+    The previous implementation re-armed a threading.Timer *after* running the
+    task, so a single exception silently killed the loop for good : Flask kept
+    answering while regulation and Tempo refresh were dead until restart.
+    The period is read at each iteration so a config change is picked up.
+    """
+    def loop():
+        while True:
+            time.sleep(period_getter())
+            run_safely(task, name)
+
+    Thread(target=loop, name=name, daemon=True).start()
 
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.INFO)
     init_app()
-    periodic_timer_handler()  # Start the periodic task
-    provider_timer_handler()  # Start the Tempo provider periodic task
+    # Fetch Tempo before the first regulation cycle, so the rules are not
+    # evaluated on an UNKNOWN colour.
+    run_safely(tempo_provider.update, 'Tempo provider update')
+    run_safely(periodic_tasks, 'Periodic task')
+    start_periodic_thread(tempo_provider.update,
+                          lambda: config['app']['pooling_provider_frequency'],
+                          'tempo-provider')
+    start_periodic_thread(periodic_tasks,
+                          lambda: config['app']['pooling_frequency'],
+                          'regulation')
     app.run(host='0.0.0.0', port=7654, debug=False)

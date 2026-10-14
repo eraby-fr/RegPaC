@@ -9,7 +9,15 @@ function App() {
   const [error, setError] = useState(null)
   const [errorExpanded, setErrorExpanded] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
-  const [tempo, setTempo] = useState({ today: 'UNKNOWN', tomorrow: 'UNKNOWN' })
+  const [tempo, setTempo] = useState({
+    today: 'UNKNOWN',
+    tomorrow: 'UNKNOWN',
+    today_status: 'NEVER_FETCHED',
+    tomorrow_status: 'NEVER_FETCHED',
+    last_update: null,
+    stale: true
+  })
+  const [tempoError, setTempoError] = useState(null)
   const [successNotification, setSuccessNotification] = useState({ off_peak: false, full_cost: false })
 
   const API_BASE = '/api'
@@ -45,11 +53,17 @@ function App() {
       const setpointData = await setpointResponse.json()
       setSetpoints(setpointData)
 
-      // Fetch tempo data
+      // Fetch tempo data. Tempo is not critical to the rest of the page, so a
+      // failure is reported in the Tempo section instead of blanking the
+      // dashboard -- but it must never be swallowed silently.
       const tempoResponse = await fetch(`${API_BASE}/tempo`)
       if (tempoResponse.ok) {
         const tempoData = await tempoResponse.json()
         setTempo(tempoData)
+        setTempoError(null)
+      } else {
+        const errorText = await tempoResponse.text()
+        setTempoError(`Erreur lors de la récupération des données Tempo (${tempoResponse.status}): ${errorText}`)
       }
 
       setLastUpdate(new Date())
@@ -147,6 +161,25 @@ function App() {
           text: 'text-white',
           label: 'Inconnu'
         }
+    }
+  }
+
+  // An UNKNOWN colour used to be indistinguishable from an outage. The backend
+  // now says why, so show it.
+  const getTempoStatusLabel = (status) => {
+    switch (status) {
+      case 'OK':
+        return null
+      case 'NOT_PUBLISHED':
+        return 'Couleur pas encore publiée par EDF'
+      case 'FETCH_ERROR':
+        return 'API Tempo injoignable'
+      case 'STALE':
+        return 'Donnée périmée, rafraîchissement en échec'
+      case 'NEVER_FETCHED':
+        return 'Jamais récupérée depuis le démarrage'
+      default:
+        return null
     }
   }
 
@@ -350,6 +383,12 @@ function App() {
             <Zap className="w-6 h-6 text-yellow-500" />
             Tarification Tempo
           </h2>
+          {tempoError && (
+            <div className="mb-4 rounded-xl bg-red-50 border border-red-200 p-4 flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{tempoError}</p>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className={`rounded-2xl shadow-xl p-6 ${getTempoStyles(tempo.today).bg} ${getTempoStyles(tempo.today).text}`}>
               <div className="flex items-center justify-between mb-4">
@@ -363,6 +402,11 @@ function App() {
                 <div className="text-sm opacity-90">
                   {getTempoStyles(tempo.today).label}
                 </div>
+                {getTempoStatusLabel(tempo.today_status) && (
+                  <div className="text-xs opacity-90 mt-2">
+                    {getTempoStatusLabel(tempo.today_status)}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -378,9 +422,19 @@ function App() {
                 <div className="text-sm opacity-90">
                   {getTempoStyles(tempo.tomorrow).label}
                 </div>
+                {getTempoStatusLabel(tempo.tomorrow_status) && (
+                  <div className="text-xs opacity-90 mt-2">
+                    {getTempoStatusLabel(tempo.tomorrow_status)}
+                  </div>
+                )}
               </div>
             </div>
           </div>
+          <p className="mt-3 text-xs text-gray-500 text-center">
+            {tempo.last_update
+              ? `API Tempo interrogée à ${formatTimestamp(tempo.last_update.replace(' ', 'T'))}${tempo.stale ? ' — donnée périmée' : ''}`
+              : 'API Tempo jamais interrogée avec succès'}
+          </p>
         </div>
 
         <div className="mt-8 text-center text-gray-400 text-sm">
